@@ -59,34 +59,6 @@ const fadeInUp: Variants = {
 export default function Home() {
   return (
     <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20">
-      {/* Navigation */}
-      <motion.nav
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="container mx-auto px-4 py-6 flex items-center justify-between"
-      >
-        <motion.div
-          initial={{ scale: 0.9 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-2xl font-bold bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent"
-        >
-          Mira
-        </motion.div>
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" asChild>
-            <Link href="/signin">Sign In</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/signup">
-              Sign Up
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
-      </motion.nav>
-
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-20">
         <motion.div

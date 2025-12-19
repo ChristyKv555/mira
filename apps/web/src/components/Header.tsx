@@ -61,17 +61,12 @@ export function Header() {
             </>
           ) : (
             isHomePage && (
-              <>
-                <Button variant="ghost" asChild>
-                  <Link href="/login">Sign In</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/signup">
-                    Sign Up
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </>
+              <Button asChild>
+                <Link href="/login">
+                  Get Started
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
             )
           )}
           <ThemeToggle />

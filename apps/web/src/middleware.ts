@@ -31,9 +31,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // ROUTE PROTECTION LOGIC
-  const isAuthPage =
-    request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/signup");
+  const isAuthPage = request.nextUrl.pathname.startsWith("/login");
   const isApiRoute = request.nextUrl.pathname.startsWith("/api");
   const isPublicAsset = request.nextUrl.pathname.match(
     /\.(ico|svg|png|jpg|jpeg|gif|webp|woff|woff2)$/

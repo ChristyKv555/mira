@@ -37,7 +37,7 @@ export const selectTaskSchema = createSelectSchema(tasks, {
 });
 
 export const insertTaskSchema = createInsertSchema(tasks, {
-  userId: z.string().uuid("Invalid user ID"),
+  userId: z.uuid("Invalid user ID"),
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   status: taskStatusEnum.default("pending"),

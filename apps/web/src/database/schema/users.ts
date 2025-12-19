@@ -14,7 +14,7 @@ export const users = pgTable("users", {
 // Zod schemas derived from Drizzle table
 export const selectUserSchema = createSelectSchema(users);
 export const insertUserSchema = createInsertSchema(users, {
-  email: z.string().email("Invalid email address"),
+  email: z.email("Invalid email address"),
   name: z.string().min(1, "Name is required").optional(),
   passwordHash: z.string().min(1, "Password hash is required"),
 });

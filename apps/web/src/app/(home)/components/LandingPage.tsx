@@ -181,7 +181,7 @@ export default function LandingPage() {
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 overflow-hidden">
       {/* Hero Section */}
       <section
         ref={heroRef}
@@ -230,15 +230,15 @@ export default function LandingPage() {
             variants={fadeInUp}
             className="text-6xl md:text-8xl font-bold mb-8 leading-tight"
           >
-            <span className="bg-gradient-to-r from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent">
               Organize Tasks.
             </span>
             <br />
-            <span className="bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent">
               Prioritize Smartly.
             </span>
             <br />
-            <span className="bg-gradient-to-r from-foreground/80 via-foreground/60 to-foreground/40 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-foreground/80 via-foreground/60 to-foreground/40 bg-clip-text text-transparent">
               Achieve More.
             </span>
           </motion.h1>
@@ -248,8 +248,8 @@ export default function LandingPage() {
             className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed"
           >
             Mira uses advanced AI to aggregate and prioritize tasks from
-            different source channels, helping you stay organized and focused
-            on what truly matters. Experience intelligent task management like
+            different source channels, helping you stay organized and focused on
+            what truly matters. Experience intelligent task management like
             never before.
           </motion.p>
 
@@ -379,7 +379,7 @@ export default function LandingPage() {
                   transition={{ duration: 0.3 }}
                   className="group relative p-8 rounded-2xl border bg-card/50 backdrop-blur-sm hover:bg-card/90 hover:shadow-xl transition-all duration-300 overflow-hidden"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative z-10">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-primary/10 text-primary mb-6 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
                       <Icon className="h-8 w-8" />
@@ -565,14 +565,14 @@ export default function LandingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="p-12 rounded-3xl border bg-gradient-to-br from-card/80 to-card/50 backdrop-blur-sm"
+            className="p-12 rounded-3xl border bg-linear-to-br from-card/80 to-card/50 backdrop-blur-sm"
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               Ready to Transform Your Workflow?
             </h2>
             <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-              Join thousands of professionals who are already using Mira to
-              stay organized and productive.
+              Join thousands of professionals who are already using Mira to stay
+              organized and productive.
             </p>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button size="lg" className="text-lg px-10 py-6" asChild>

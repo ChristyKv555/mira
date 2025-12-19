@@ -1,135 +1,269 @@
-# Turborepo starter
+# Mira
 
-This Turborepo starter is maintained by the Turborepo core team.
+**Mira** is an AI-powered task management application that aggregates and intelligently prioritizes tasks from multiple source channels, helping you stay organized and focused on what truly matters.
 
-## Using this example
+## 🎯 Overview
 
-Run the following command:
+Mira connects tasks from various sources (email, Slack, Jira, etc.) into a unified platform and uses AI to intelligently prioritize them, ensuring you never miss important deadlines and stay organized effortlessly.
 
-```sh
-npx create-turbo@latest
+### Key Features
+
+- **📊 Task Aggregation** - Connect all your task sources in one place
+- **🤖 AI Prioritization** - Let AI intelligently prioritize what matters most
+- **📅 Deadline Management** - Never miss important deadlines
+- **🎨 Modern UI** - Beautiful, responsive interface with dark mode support
+- **🔐 User Authentication** - Secure user accounts and session management
+- **📱 Multi-Source Integration** - Support for Gmail, Slack, Calendar, and more
+
+## 🛠️ Tech Stack
+
+- **Framework**: [Next.js 16](https://nextjs.org/) with App Router
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Database**: PostgreSQL with [Drizzle ORM](https://orm.drizzle.team/)
+- **State Management**: [Redux Toolkit](https://redux-toolkit.js.org/) with Redux Persist
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) v4
+- **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+- **Validation**: [Zod](https://zod.dev/)
+- **Monorepo**: [Turborepo](https://turborepo.org/)
+- **Package Manager**: [pnpm](https://pnpm.io/)
+
+## 📋 Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js** >= 18
+- **pnpm** >= 9.0.0
+- **PostgreSQL** database (local or remote)
+
+## 🚀 Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone <repository-url>
+cd mira
 ```
 
-## What's inside?
+### 2. Install Dependencies
 
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+```bash
+pnpm install
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+### 3. Environment Setup
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+Create a `.env` file in the `apps/web` directory:
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+```bash
+cd apps/web
+touch .env
 ```
 
-### Develop
+Add the following environment variables:
 
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+```env
+DATABASE_URL=postgresql://username:password@localhost:5432/mira
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+Replace `username`, `password`, `localhost`, `5432`, and `mira` with your actual PostgreSQL credentials.
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
+### 4. Database Setup
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+#### Generate Migration Files
+
+```bash
+pnpm db:generate
 ```
 
-### Remote Caching
+#### Run Migrations
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
+```bash
+pnpm db:migrate
 ```
-cd my-turborepo
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
+Alternatively, you can push schema changes directly (for development):
+
+```bash
+pnpm db:push
+```
+
+#### Open Database Studio (Optional)
+
+```bash
+pnpm db:studio
+```
+
+This opens Drizzle Studio where you can view and manage your database visually.
+
+### 5. Start Development Server
+
+From the root directory:
+
+```bash
+# Start all apps
+pnpm dev
+
+# Or start only the web app
+pnpm dev --filter=web
+```
+
+The web application will be available at `http://localhost:3000`.
+
+## 📁 Project Structure
+
+```text
+mira/
+├── apps/
+│   ├── web/                 # Main Next.js application
+│   │   ├── src/
+│   │   │   ├── app/         # Next.js app router pages
+│   │   │   ├── components/  # React components
+│   │   │   ├── database/    # Database schema and migrations
+│   │   │   ├── lib/         # Utility functions
+│   │   │   ├── providers/   # React context providers
+│   │   │   ├── store/       # Redux store and slices
+│   │   │   └── types/       # TypeScript type definitions
+│   │   └── drizzle/         # Generated migration files
+│   └── docs/                # Documentation app
+├── packages/
+│   ├── ui/                  # Shared UI components
+│   ├── eslint-config/       # ESLint configurations
+│   └── typescript-config/   # TypeScript configurations
+└── turbo.json               # Turborepo configuration
+```
+
+## 🎮 Available Commands
+
+### Root Level Commands
+
+```bash
+# Development
+pnpm dev                    # Start all apps in development mode
+pnpm dev --filter=web       # Start only the web app
+
+# Build
+pnpm build                  # Build all apps and packages
+pnpm build --filter=web     # Build only the web app
+
+# Linting
+pnpm lint                   # Lint all apps and packages
+
+# Formatting
+pnpm format                 # Format code with Prettier
+
+# Type Checking
+pnpm check-types            # Type check all apps and packages
+```
+
+### Web App Commands
+
+```bash
+cd apps/web
+
+# Development
+pnpm dev                    # Start Next.js dev server
+
+# Database
+pnpm db:generate            # Generate Drizzle migration files
+pnpm db:migrate             # Run database migrations
+pnpm db:push                # Push schema changes to database
+pnpm db:studio              # Open Drizzle Studio
+
+# UI Components
+pnpm add-component          # Add shadcn/ui components
+
+# Production
+pnpm build                  # Build for production
+pnpm start                  # Start production server
+```
+
+## 🗄️ Database Schema
+
+### Users Table
+
+- `id` (UUID, Primary Key)
+- `email` (Text, Unique)
+- `name` (Text, Optional)
+- `passwordHash` (Text)
+- `createdAt` (Timestamp)
+- `updatedAt` (Timestamp)
+
+### Tasks Table
+
+- `id` (UUID, Primary Key)
+- `userId` (UUID, Foreign Key → users.id)
+- `title` (Text, Required)
+- `description` (Text, Optional)
+- `status` (Text: "pending" | "in_progress" | "completed")
+- `priority` (Integer: 0 = low, 1 = medium, 2 = high)
+- `source` (Text, Optional) - e.g., "email", "slack", "jira"
+- `sourceId` (Text, Optional) - ID from the source system
+- `dueDate` (Timestamp, Optional)
+- `completedAt` (Timestamp, Optional)
+- `createdAt` (Timestamp)
+- `updatedAt` (Timestamp)
+
+## 🔧 Development
+
+### Adding New Components
+
+Use shadcn/ui CLI to add components:
+
+```bash
+cd apps/web
+pnpm add-component
+```
+
+### Database Migrations
+
+When you modify the database schema:
+
+1. Update the schema files in `apps/web/src/database/schema/`
+2. Generate migration: `pnpm db:generate`
+3. Review the generated migration files in `apps/web/drizzle/`
+4. Apply migrations: `pnpm db:migrate`
+
+### Code Style
+
+- ESLint is configured for code linting
+- Prettier is configured for code formatting
+- TypeScript strict mode is enabled
+
+## 🌐 Remote Caching (Optional)
+
+Turborepo supports remote caching to share build artifacts across machines. To enable:
+
+1. Create a [Vercel account](https://vercel.com/signup)
+1. Authenticate:
+
+```bash
 turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
+# or
 pnpm exec turbo login
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+1. Link your repository:
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
+```bash
 turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
+# or
 pnpm exec turbo link
 ```
 
-## Useful Links
+## 📚 Learn More
 
-Learn more about the power of Turborepo:
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Drizzle ORM Documentation](https://orm.drizzle.team/docs/overview)
+- [Turborepo Documentation](https://turborepo.org/docs)
+- [Redux Toolkit Documentation](https://redux-toolkit.js.org/)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [shadcn/ui Documentation](https://ui.shadcn.com/)
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+## 📝 License
+
+This project is private and proprietary.
+
+---
+
+Built with ❤️ using modern web technologies

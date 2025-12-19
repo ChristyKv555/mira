@@ -117,7 +117,7 @@ export default function LandingPage() {
               className="text-lg px-8"
               asChild
             >
-              <Link href="/signin">Sign In</Link>
+              <Link href="/login">Sign In</Link>
             </Button>
           </motion.div>
 
@@ -198,7 +198,7 @@ export default function LandingPage() {
                 className="text-lg px-8"
                 asChild
               >
-                <Link href="/signin">Sign In to Your Account</Link>
+                <Link href="/login">Sign In to Your Account</Link>
               </Button>
             </div>
           </motion.div>

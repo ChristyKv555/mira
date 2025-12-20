@@ -90,16 +90,15 @@ export function Sidebar() {
       >
         {/* Header Section */}
         <div className="flex h-16 items-center border-b px-4">
-          <div
-            className={cn(
-              "flex items-center justify-center rounded-lg bg-black dark:bg-white text-white dark:text-black font-bold",
-              isCollapsed
-                ? "h-10 w-10 text-lg mx-auto"
-                : "h-10 px-8 py-2.5 text-base w-full"
-            )}
-          >
-            {isCollapsed ? "M" : "Mira"}
-          </div>
+          {isCollapsed ? (
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-black dark:bg-white text-white dark:text-black font-bold text-lg mx-auto">
+              M
+            </div>
+          ) : (
+            <h1 className="text-2xl font-bold bg-linear-to-r from-foreground via-foreground/60 to-foreground bg-clip-text text-transparent tracking-tight animate-gradient bg-size-[200%_auto] transition-all duration-300 hover:scale-105">
+              Mira
+            </h1>
+          )}
         </div>
 
         {/* Navigation Items */}

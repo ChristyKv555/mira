@@ -20,6 +20,19 @@ export default function LoginPage() {
       }
     };
     checkUser();
+
+    // Listen for auth state changes (login/signup)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        router.push("/dashboard");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [supabase, router]);
 
   // Custom theme matching app colors

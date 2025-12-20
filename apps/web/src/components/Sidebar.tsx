@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard,
   CheckSquare,
@@ -56,37 +55,11 @@ const sidebarItems: SidebarItem[] = [
 
 export function Sidebar() {
   const { isCollapsed, setIsCollapsed } = useSidebar();
-  const [user, setUser] = useState<{ email?: string } | null>(null);
+  const { user, signOut } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
-  const supabase = createClient();
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    checkUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
-    router.refresh();
-  };
-
-  const handleEditProfile = () => {
-    router.push("/dashboard/settings");
+    await signOut();
   };
 
   const getUserInitials = (email: string | undefined) => {
@@ -192,7 +165,7 @@ export function Sidebar() {
                 side={isCollapsed ? "right" : "top"}
                 className="w-48"
               >
-                <DropdownMenuItem onClick={handleEditProfile}>
+                <DropdownMenuItem onClick={() => {}}>
                   <Edit className="mr-2 h-4 w-4" />
                   <span>Edit</span>
                 </DropdownMenuItem>

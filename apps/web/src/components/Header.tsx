@@ -4,39 +4,16 @@ import Link from "next/link";
 import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, LogOut } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
-import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Header() {
   const pathname = usePathname();
-  const router = useRouter();
   const isHomePage = pathname === "/";
-  const [user, setUser] = useState<any>(null);
-  const supabase = createClient();
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    checkUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase]);
+  const { user, isAuthenticated, signOut } = useAuth();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
-    router.refresh();
+    await signOut();
   };
 
   return (
@@ -49,7 +26,7 @@ export function Header() {
           Mira
         </Link>
         <div className="flex items-center gap-4">
-          {user ? (
+          {user && isAuthenticated ? (
             <>
               <Button variant="ghost" asChild>
                 <Link href="/dashboard">Dashboard</Link>

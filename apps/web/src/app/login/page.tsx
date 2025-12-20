@@ -3,37 +3,9 @@
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { createClient } from "@/utils/supabase/client";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const supabase = createClient();
-  const router = useRouter();
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        router.push("/dashboard");
-      }
-    };
-    checkUser();
-
-    // Listen for auth state changes (login/signup)
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        router.push("/dashboard");
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase, router]);
 
   // Custom theme matching app colors
   const customTheme = {

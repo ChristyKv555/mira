@@ -17,7 +17,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const supabase = createClient();
   const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
   const redirectHandledRef = useRef(false);
+  const pathnameRef = useRef(pathname);
 
+  // Initial user check - runs only once on mount
   useEffect(() => {
     let isMounted = true;
 
@@ -60,7 +62,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     checkUser();
 
-    // Set up auth state change listener
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase, dispatch]);
+
+  // Set up auth state change listener - runs only once on mount
+  useEffect(() => {
+    let isMounted = true;
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -83,7 +93,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
             );
 
             // Redirect logic: if on login page, redirect to dashboard
-            if (pathname === "/login" && !redirectHandledRef.current) {
+            if (
+              pathnameRef.current === "/login" &&
+              !redirectHandledRef.current
+            ) {
               redirectHandledRef.current = true;
               router.push("/dashboard");
               router.refresh();
@@ -95,7 +108,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           dispatch(logout());
           // Redirect logic: if on protected route, redirect to login
           if (
-            pathname?.startsWith("/dashboard") &&
+            pathnameRef.current?.startsWith("/dashboard") &&
             !redirectHandledRef.current
           ) {
             redirectHandledRef.current = true;
@@ -142,14 +155,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     subscriptionRef.current = subscription;
 
-    // Reset redirect flag when pathname changes
-    redirectHandledRef.current = false;
-
     return () => {
       isMounted = false;
       subscription?.unsubscribe();
     };
-  }, [supabase, dispatch, router, pathname]);
+  }, [supabase, dispatch, router]);
+
+  // Update pathname ref and reset redirect flag when pathname changes (without re-running auth checks)
+  useEffect(() => {
+    pathnameRef.current = pathname;
+    redirectHandledRef.current = false;
+  }, [pathname]);
 
   return <>{children}</>;
 }

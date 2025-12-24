@@ -47,8 +47,32 @@ export const insertTaskSchema = createInsertSchema(tasks, {
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   embedding: z.array(z.number()).optional(), // Zod handles vector as numeric array
-  dueDate: z.date().optional(),
-  completedAt: z.date().optional(),
+  dueDate: z
+    .union([z.date(), z.string()])
+    .optional()
+    .nullable()
+    .transform((val) => {
+      if (!val || val === "") return null;
+      if (val instanceof Date) return val;
+      if (typeof val === "string") {
+        const date = new Date(val);
+        return isNaN(date.getTime()) ? null : date;
+      }
+      return null;
+    }),
+  completedAt: z
+    .union([z.date(), z.string()])
+    .optional()
+    .nullable()
+    .transform((val) => {
+      if (!val || val === "") return null;
+      if (val instanceof Date) return val;
+      if (typeof val === "string") {
+        const date = new Date(val);
+        return isNaN(date.getTime()) ? null : date;
+      }
+      return null;
+    }),
 });
 
 // Update schema

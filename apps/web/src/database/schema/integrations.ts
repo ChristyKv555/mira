@@ -19,8 +19,8 @@ export const integrations = pgTable("integrations", {
 export const selectIntegrationSchema = createSelectSchema(integrations);
 export const insertIntegrationSchema = createInsertSchema(integrations, {
   userId: z.uuid("Invalid user ID"),
-  platform: z.enum(["slack", "google-calendar", "gmail"], {
-    message: "Platform must be slack, google-calendar, or gmail",
+  platform: z.enum(["slack", "google-calendar", "google-mail"], {
+    message: "Platform must be slack, google-calendar, or google-mail",
   }),
   nangoConnectionId: z.string().min(1, "Nango connection ID is required"),
   isActive: z.number().int().min(0).max(1).default(1),

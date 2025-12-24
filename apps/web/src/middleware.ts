@@ -55,6 +55,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  // --- API ROUTE USER INJECTION ---
+  // If it's an API route and we have a user, inject headers into the request else return 401
+  if (isApiRoute && user) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-user-id", user.id);
+    requestHeaders.set("x-user-email", user.email || "");
+
+    // We must return a new response with the modified headers
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  } else if (isApiRoute && !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   return response;
 }
 

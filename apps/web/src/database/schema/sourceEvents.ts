@@ -24,8 +24,8 @@ export const selectSourceEventSchema = createSelectSchema(sourceEvents);
 export const insertSourceEventSchema = createInsertSchema(sourceEvents, {
   userId: z.uuid("Invalid user ID"),
   integrationId: z.uuid("Invalid integration ID").optional(),
-  platform: z.enum(["slack", "google-calendar", "gmail"], {
-    message: "Platform must be slack, google-calendar, or gmail",
+  platform: z.enum(["slack", "google-calendar", "google-mail"], {
+    message: "Platform must be slack, google-calendar, or google-mail",
   }),
   externalId: z.string().min(1, "External ID is required"),
   rawContent: z.string().min(1, "Raw content is required"),

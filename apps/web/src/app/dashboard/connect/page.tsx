@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
   MessageSquare,
@@ -10,13 +9,12 @@ import {
   CheckCircle2,
   Loader2,
 } from "lucide-react";
-import Nango from "@nangohq/frontend";
 
 interface Integration {
   id: string;
   userId: string;
   platform: "slack" | "google-calendar" | "google-mail";
-  nangoConnectionId: string;
+  connectionId: string;
   isActive: number;
   createdAt: string;
 }
@@ -56,7 +54,6 @@ const integrations: IntegrationConfig[] = [
 ];
 
 export default function ConnectPage() {
-  const { user } = useAuth();
   const [userIntegrations, setUserIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState<string | null>(null);
@@ -80,48 +77,11 @@ export default function ConnectPage() {
   };
 
   const handleConnect = async (integrationId: string) => {
-    if (!user) {
-      console.error("User not authenticated");
-      return;
-    }
-
     setConnecting(integrationId);
-
     try {
-      // Initialize Nango (uses default host if not specified)
-      const nango = new Nango();
-
-      // Open the connect UI
-      const connect = nango.openConnectUI({
-        onEvent: (event) => {
-          if (event.type === "close") {
-            setConnecting(null);
-            // Modal was closed
-          } else if (event.type === "connect") {
-            // Connection successful - refresh integrations list
-            fetchIntegrations();
-            setConnecting(null);
-          }
-        },
-      });
-
-      // Get session token from backend
-      const tokenResponse = await fetch("/api/nango/sessionToken", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ integrationId }),
-      });
-
-      if (!tokenResponse.ok) {
-        throw new Error("Failed to get session token");
-      }
-
-      const { sessionToken } = await tokenResponse.json();
-
-      // Set the session token to show the auth flow
-      connect.setSessionToken(sessionToken);
+      // Connection logic will be implemented in the future
+      // fetchIntegrations();
+      // setConnecting(null);
     } catch (error) {
       console.error("Error connecting integration:", error);
       setConnecting(null);

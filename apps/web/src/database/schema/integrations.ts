@@ -1,4 +1,11 @@
-import { pgTable, text, timestamp, uuid, integer } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+  integer,
+  jsonb,
+} from "drizzle-orm/pg-core";
 import { users } from "./users";
 import { createSelectSchema, createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -10,7 +17,8 @@ export const integrations = pgTable("integrations", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   platform: text("platform").notNull(),
-  nangoConnectionId: text("nango_connection_id").notNull(),
+  connectionId: text("connection_id").notNull(),
+  metadata: jsonb("metadata"),
   isActive: integer("is_active").default(1),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -22,7 +30,7 @@ export const insertIntegrationSchema = createInsertSchema(integrations, {
   platform: z.enum(["slack", "google-calendar", "google-mail"], {
     message: "Platform must be slack, google-calendar, or google-mail",
   }),
-  nangoConnectionId: z.string().min(1, "Nango connection ID is required"),
+  connectionId: z.string().min(1, "Connection ID is required"),
   isActive: z.number().int().min(0).max(1).default(1),
 });
 

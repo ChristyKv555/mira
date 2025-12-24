@@ -1,91 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/database";
-import { integrations } from "@/database/schema";
-import { eq } from "drizzle-orm";
+import {
+  handleAuthWebhook,
+  handleSyncWebhook,
+  handleForwardedWebhook,
+} from "@/app/api/nango/handlers";
+import type { NangoWebhookPayload } from "@/app/api/nango/helpers";
 
+/**
+ * Main webhook handler for Nango events
+ * Routes different webhook types to appropriate handlers
+ */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = (await request.json()) as NangoWebhookPayload;
 
     // Verify webhook signature (optional but recommended)
-    // You can add signature verification here using Nango's webhook secret
+    // TODO: Add signature verification using Nango's webhook secret
+    // const signature = request.headers.get("x-nango-signature");
+    // if (!verifyWebhookSignature(body, signature)) {
+    //   return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    // }
 
-    // Handle different webhook types
-    if (body.type === "auth" && body.operation === "creation" && body.success) {
-      const connectionId = body.connectionId;
-      const endUserId = body.endUser?.endUserId;
-      // Nango sends providerConfigKey which is the integration ID
-      const integrationId = body.providerConfigKey || body.integrationId;
+    const { type } = body;
 
-      if (!connectionId || !endUserId || !integrationId) {
-        console.error("Missing required fields in webhook:", body);
+    // Route based on webhook type and operation
+    switch (type) {
+      case "auth":
+        return handleAuthWebhook(request, body);
+
+      case "sync":
+        return handleSyncWebhook(request, body);
+
+      case "forwarded":
+        return handleForwardedWebhook(request, body);
+
+      default:
+        console.warn("Unknown webhook type received:", type);
         return NextResponse.json(
-          { error: "Missing required fields" },
-          { status: 400 }
+          { success: true, message: "Webhook type not handled, ignoring" },
+          { status: 200 }
         );
-      }
-
-      // Map Nango integration IDs to our platform names
-      const platformMap: Record<string, string> = {
-        slack: "slack",
-        "google-calendar": "google-calendar",
-        "google-mail": "google-mail",
-      };
-
-      const platform =
-        platformMap[integrationId.toLowerCase()] || integrationId.toLowerCase();
-
-      // Check if integration already exists
-      const existingIntegration = await db
-        .select()
-        .from(integrations)
-        .where(eq(integrations.nangoConnectionId, connectionId))
-        .limit(1);
-
-      if (existingIntegration.length > 0) {
-        console.log("Integration already exists:", connectionId);
-        return NextResponse.json({
-          success: true,
-          message: "Integration already exists",
-        });
-      }
-
-      // Create new integration record
-      await db.insert(integrations).values({
-        userId: endUserId,
-        platform: platform as "slack" | "google-calendar" | "google-mail",
-        nangoConnectionId: connectionId,
-        isActive: 1,
-      });
-
-      console.log("Integration created successfully:", {
-        connectionId,
-        userId: endUserId,
-        platform,
-      });
-
-      return NextResponse.json({
-        success: true,
-        message: "Integration saved successfully",
-      });
     }
-
-    // Handle other webhook types (deletion, updates, etc.)
-    if (body.type === "auth" && body.operation === "deletion") {
-      const connectionId = body.connectionId;
-
-      if (connectionId) {
-        // Deactivate the integration instead of deleting
-        await db
-          .update(integrations)
-          .set({ isActive: 0 })
-          .where(eq(integrations.nangoConnectionId, connectionId));
-
-        console.log("Integration deactivated:", connectionId);
-      }
-    }
-
-    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error processing webhook:", error);
     return NextResponse.json(

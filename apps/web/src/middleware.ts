@@ -1,6 +1,21 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Public API routes that don't require authentication
+// These routes are called by external services (e.g., Nango webhooks)
+const PUBLIC_API_ROUTES = [
+  "/api/nango/webhooks",
+  // Add more public API routes here as needed
+  // Example: "/api/public/webhook",
+];
+
+/**
+ * Check if a pathname matches any public API route
+ */
+function isPublicApiRoute(pathname: string): boolean {
+  return PUBLIC_API_ROUTES.some((route) => pathname.startsWith(route));
+}
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -37,6 +52,7 @@ export async function middleware(request: NextRequest) {
     /\.(ico|svg|png|jpg|jpeg|gif|webp|woff|woff2)$/
   );
   const isAuthCallback = request.nextUrl.pathname.startsWith("/auth/callback");
+  const isPublicApi = isPublicApiRoute(request.nextUrl.pathname);
 
   // If user is authenticated and trying to access auth pages, redirect to dashboard
   if (user && isAuthPage) {
@@ -55,21 +71,71 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // --- API ROUTE USER INJECTION ---
-  // If it's an API route and we have a user, inject headers into the request else return 401
-  if (isApiRoute && user) {
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set("x-user-id", user.id);
-    requestHeaders.set("x-user-email", user.email || "");
+  // --- API ROUTE HANDLING ---
+  if (isApiRoute) {
+    // Handle OPTIONS requests for CORS preflight
+    if (request.method === "OPTIONS") {
+      return new NextResponse(null, {
+        status: 200,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers":
+            "Content-Type, Authorization, X-Requested-With, x-user-id, x-user-email, x-nango-signature, x-nango-hmac-sha256",
+          "Access-Control-Max-Age": "86400",
+        },
+      });
+    }
 
-    // We must return a new response with the modified headers
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
-  } else if (isApiRoute && !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Public API routes: skip authentication, allow through with CORS headers
+    if (isPublicApi) {
+      const publicResponse = NextResponse.next();
+      publicResponse.headers.set("Access-Control-Allow-Origin", "*");
+      publicResponse.headers.set(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, OPTIONS"
+      );
+      publicResponse.headers.set(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization, X-Requested-With, x-nango-signature, x-nango-hmac-sha256"
+      );
+      return publicResponse;
+    }
+
+    // Protected API routes: require authentication
+    if (user) {
+      // Inject user info into headers for authenticated API routes
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("x-user-id", user.id);
+      requestHeaders.set("x-user-email", user.email || "");
+
+      const authResponse = NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
+
+      // Add CORS headers for authenticated routes too
+      authResponse.headers.set("Access-Control-Allow-Origin", "*");
+      authResponse.headers.set(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, OPTIONS"
+      );
+      authResponse.headers.set(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization, X-Requested-With, x-user-id, x-user-email"
+      );
+
+      return authResponse;
+    } else {
+      // No user and not a public route: return 401
+      const errorResponse = NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+      errorResponse.headers.set("Access-Control-Allow-Origin", "*");
+      return errorResponse;
+    }
   }
 
   return response;

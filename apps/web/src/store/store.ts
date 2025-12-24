@@ -3,19 +3,21 @@ import { persistStore, persistReducer } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 import { combineReducers } from "@reduxjs/toolkit";
 import authReducer from "./slices/authSlice";
+import integrationsReducer from "../app/dashboard/connect/store/integrationsSlice";
+import { integrationsApi } from "../app/dashboard/connect/store/integrationsApi";
 
 // Redux persist configuration
 const persistConfig = {
   key: "root",
   storage,
-  // Add any reducers you want to persist or blacklist here
-  // whitelist: ['auth'], // Only persist specific reducers
-  // blacklist: ['ui'], // Don't persist specific reducers
+  whitelist: ["auth"],
 };
 
 // Combine all reducers
 const rootReducer = combineReducers({
   auth: authReducer,
+  integrations: integrationsReducer,
+  [integrationsApi.reducerPath]: integrationsApi.reducer,
 });
 
 // Create persisted reducer
@@ -29,7 +31,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
       },
-    }),
+    }).concat(integrationsApi.middleware),
 });
 
 // Create persistor

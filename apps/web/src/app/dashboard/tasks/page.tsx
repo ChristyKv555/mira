@@ -39,11 +39,19 @@ import type {
   CreateStatusInput,
   CreatePriorityInput,
 } from "./types";
+import type { TaskFilters } from "./components/TaskFilters";
 
 export default function TasksPage() {
   const dispatch = useDispatch();
   const searchQuery = useAppSelector((state) => state.tasks.searchQuery);
   const selectedTask = useAppSelector((state) => state.tasks.selectedTask);
+
+  // Filters state
+  const [filters, setFilters] = useState<TaskFilters>({
+    priorityIds: [],
+    sources: [],
+    dueDateFilter: undefined,
+  });
 
   // Modals state
   const [createTaskModalOpen, setCreateTaskModalOpen] = useState(false);
@@ -62,7 +70,7 @@ export default function TasksPage() {
     data: tasksData,
     isLoading: tasksLoading,
     refetch: refetchTasks,
-  } = useGetTasksQuery();
+  } = useGetTasksQuery(filters);
   const { data: statusesData, isLoading: statusesLoading } =
     useGetStatusesQuery();
   const { data: prioritiesData, isLoading: prioritiesLoading } =
@@ -99,12 +107,23 @@ export default function TasksPage() {
   const statuses = useAppSelector((state) => state.tasks.statuses);
   const priorities = useAppSelector((state) => state.tasks.priorities);
 
-  // Filter tasks based on search query
+  // Extract available sources from tasks
+  const availableSources = useMemo(() => {
+    const sources = new Set<string>();
+    tasks.forEach((task: Task) => {
+      if (task.source?.platform) {
+        sources.add(task.source.platform);
+      }
+    });
+    return Array.from(sources);
+  }, [tasks]);
+
+  // Filter tasks based on search query (client-side filtering for search only)
   const filteredTasks = useMemo(() => {
     if (!searchQuery.trim()) return tasks;
     const query = searchQuery.toLowerCase();
     return tasks.filter(
-      (task) =>
+      (task: Task) =>
         task.title.toLowerCase().includes(query) ||
         task.description?.toLowerCase().includes(query)
     );
@@ -267,6 +286,11 @@ export default function TasksPage() {
           onSearchChange={(query) => dispatch(setSearchQuery(query))}
           onCreateStatus={() => setCreateStatusModalOpen(true)}
           onCreatePriority={() => setCreatePriorityModalOpen(true)}
+          filters={filters}
+          onFiltersChange={setFilters}
+          priorities={priorities}
+          availableSources={availableSources}
+          tasks={tasks}
         />
 
         {statuses.length === 0 ? (

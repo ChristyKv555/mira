@@ -9,12 +9,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  TaskFilters as TaskFiltersComponent,
+  type TaskFilters,
+} from "./TaskFilters";
+import type { TaskPriority } from "../types";
 
 interface TasksHeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onCreateStatus: () => void;
   onCreatePriority: () => void;
+  filters: TaskFilters;
+  onFiltersChange: (filters: TaskFilters) => void;
+  priorities: TaskPriority[];
+  availableSources: string[];
+  tasks: Array<{ source?: { platform: string } | null }>;
 }
 
 export function TasksHeader({
@@ -22,11 +32,15 @@ export function TasksHeader({
   onSearchChange,
   onCreateStatus,
   onCreatePriority,
+  filters,
+  onFiltersChange,
+  priorities,
+  availableSources,
 }: TasksHeaderProps) {
   return (
     <div className="flex items-center justify-between mb-6">
-      <div className="flex-1 max-w-md">
-        <div className="relative">
+      <div className="flex items-center gap-2 flex-1 max-w-md">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search tasks..."
@@ -35,6 +49,12 @@ export function TasksHeader({
             className="pl-10"
           />
         </div>
+        <TaskFiltersComponent
+          filters={filters}
+          onFiltersChange={onFiltersChange}
+          priorities={priorities}
+          availableSources={availableSources}
+        />
       </div>
 
       <div className="flex items-center gap-2">

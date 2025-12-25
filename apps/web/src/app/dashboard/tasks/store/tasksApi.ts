@@ -8,6 +8,7 @@ import type {
   CreatePriorityInput,
   UpdateTaskInput,
 } from "../types";
+import type { TaskFilters } from "../components/TaskFilters";
 import { getApiBaseUrl } from "@/utils/api";
 
 const baseQuery = fetchBaseQuery({
@@ -22,8 +23,27 @@ export const tasksApi = createApi({
   baseQuery,
   tagTypes: ["Tasks", "Statuses", "Priorities"],
   endpoints: (builder) => ({
-    getTasks: builder.query<{ tasks: Task[] }, void>({
-      query: () => "/api/tasks/list",
+    getTasks: builder.query<{ tasks: Task[] }, TaskFilters | void>({
+      query: (filters) => {
+        const params = new URLSearchParams();
+        if (filters) {
+          if (filters.priorityIds.length > 0) {
+            filters.priorityIds.forEach((id) => {
+              params.append("priorityIds", id);
+            });
+          }
+          if (filters.sources.length > 0) {
+            filters.sources.forEach((source) => {
+              params.append("sources", source);
+            });
+          }
+          if (filters.dueDateFilter) {
+            params.append("dueDateFilter", filters.dueDateFilter);
+          }
+        }
+        const queryString = params.toString();
+        return `/api/tasks/list${queryString ? `?${queryString}` : ""}`;
+      },
       providesTags: ["Tasks"],
     }),
     getStatuses: builder.query<{ statuses: TaskStatus[] }, void>({

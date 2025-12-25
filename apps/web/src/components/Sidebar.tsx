@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Edit,
   ChevronsUpDown,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,11 @@ const sidebarItems: SidebarItem[] = [
     label: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    label: "Ask AI",
+    href: "/dashboard/ask-ai",
+    icon: Sparkles,
   },
   {
     label: "Tasks",

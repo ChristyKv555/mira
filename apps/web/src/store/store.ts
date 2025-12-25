@@ -7,6 +7,8 @@ import integrationsReducer from "../app/dashboard/connect/store/integrationsSlic
 import { integrationsApi } from "../app/dashboard/connect/store/integrationsApi";
 import tasksReducer from "../app/dashboard/tasks/store/tasksSlice";
 import { tasksApi } from "../app/dashboard/tasks/store/tasksApi";
+import keywordsReducer from "../app/dashboard/keywords/store/keywordsSlice";
+import { keywordsApi } from "../app/dashboard/keywords/store/keywordsApi";
 
 // Redux persist configuration
 const persistConfig = {
@@ -20,8 +22,10 @@ const rootReducer = combineReducers({
   auth: authReducer,
   integrations: integrationsReducer,
   tasks: tasksReducer,
+  keywords: keywordsReducer,
   [integrationsApi.reducerPath]: integrationsApi.reducer,
   [tasksApi.reducerPath]: tasksApi.reducer,
+  [keywordsApi.reducerPath]: keywordsApi.reducer,
 });
 
 // Create persisted reducer
@@ -35,7 +39,11 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
       },
-    }).concat(integrationsApi.middleware, tasksApi.middleware),
+    }).concat(
+      integrationsApi.middleware,
+      tasksApi.middleware,
+      keywordsApi.middleware
+    ),
 });
 
 // Create persistor

@@ -6,12 +6,76 @@ import {
   taskPriorities,
   sourceEvents,
 } from "@/database/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, inArray, lt, gte, lte, isNull, isNotNull } from "drizzle-orm";
 import { extractUserDataOrThrow } from "@/app/api/utils/extractor";
 
 export async function GET(request: NextRequest) {
   try {
     const userData = extractUserDataOrThrow(request);
+    const { searchParams } = new URL(request.url);
+
+    // Extract filter parameters
+    const priorityIds = searchParams.getAll("priorityIds");
+    const sources = searchParams.getAll("sources");
+    const dueDateFilter = searchParams.get("dueDateFilter");
+
+    // Build where conditions
+    const conditions = [eq(tasks.userId, userData.userId)];
+
+    // Filter by priority IDs
+    if (priorityIds.length > 0) {
+      conditions.push(inArray(tasks.priorityId, priorityIds));
+    }
+
+    // Filter by sources using sourcePlatform field from tasks table
+    if (sources.length > 0) {
+      conditions.push(inArray(tasks.sourcePlatform, sources));
+    }
+
+    // Filter by due date
+    if (dueDateFilter) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const weekEnd = new Date(today);
+      weekEnd.setDate(today.getDate() + 7);
+
+      switch (dueDateFilter) {
+        case "overdue":
+          conditions.push(
+            and(
+              isNotNull(tasks.dueDate),
+              lt(tasks.dueDate, today),
+              isNull(tasks.completedAt)
+            )!
+          );
+          break;
+        case "today":
+          conditions.push(
+            and(
+              isNotNull(tasks.dueDate),
+              gte(tasks.dueDate, today),
+              lt(tasks.dueDate, tomorrow),
+              isNull(tasks.completedAt)
+            )!
+          );
+          break;
+        case "thisWeek":
+          conditions.push(
+            and(
+              isNotNull(tasks.dueDate),
+              gte(tasks.dueDate, tomorrow),
+              lte(tasks.dueDate, weekEnd),
+              isNull(tasks.completedAt)
+            )!
+          );
+          break;
+        case "none":
+          conditions.push(isNull(tasks.dueDate));
+          break;
+      }
+    }
 
     // Fetch tasks with joined status, priority, and source data
     const userTasks = await db
@@ -20,6 +84,8 @@ export async function GET(request: NextRequest) {
         id: tasks.id,
         userId: tasks.userId,
         sourceEventId: tasks.sourceEventId,
+        sourcePlatform: tasks.sourcePlatform,
+        sourceExternalId: tasks.sourceExternalId,
         statusId: tasks.statusId,
         priorityId: tasks.priorityId,
         title: tasks.title,
@@ -48,15 +114,12 @@ export async function GET(request: NextRequest) {
           color: taskPriorities.color,
           createdAt: taskPriorities.createdAt,
         },
-        // Source fields
-        sourcePlatform: sourceEvents.platform,
-        sourceExternalId: sourceEvents.externalId,
       })
       .from(tasks)
       .leftJoin(taskStatuses, eq(tasks.statusId, taskStatuses.id))
       .leftJoin(taskPriorities, eq(tasks.priorityId, taskPriorities.id))
       .leftJoin(sourceEvents, eq(tasks.sourceEventId, sourceEvents.id))
-      .where(eq(tasks.userId, userData.userId))
+      .where(and(...conditions))
       .orderBy(tasks.createdAt);
 
     // Transform the data to match the frontend Task type
@@ -95,10 +158,10 @@ export async function GET(request: NextRequest) {
           }
         : undefined,
       source:
-        task.sourcePlatform && task.sourceExternalId
+        task.sourcePlatform && task.sourcePlatform !== "custom"
           ? {
               platform: task.sourcePlatform,
-              externalId: task.sourceExternalId,
+              externalId: task.sourceExternalId || null,
             }
           : null,
     }));

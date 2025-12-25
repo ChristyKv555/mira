@@ -12,6 +12,9 @@ export const tasks = pgTable("tasks", {
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+
+  sourcePlatform: text("source_platform").default("custom"),
+  sourceExternalId: text("source_external_id"),
   sourceEventId: uuid("source_event_id").references(() => sourceEvents.id),
 
   statusId: uuid("status_id").references(() => taskStatuses.id),

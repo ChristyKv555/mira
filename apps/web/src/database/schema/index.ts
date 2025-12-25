@@ -2,6 +2,8 @@ export * from "./users";
 export * from "./tasks";
 export * from "./taskStatuses";
 export * from "./taskPriorities";
+export * from "./priorityMappings";
+export * from "./statusMappings";
 export * from "./integrations";
 export * from "./sourceEvents";
 export * from "./validation";

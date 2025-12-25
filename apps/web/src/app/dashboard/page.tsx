@@ -49,23 +49,14 @@ export default function DashboardPage() {
           </p>
         </motion.div>
 
-        {/* High Attention Tasks Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-6"
-        >
-          <HighAttentionTasks tasks={tasks} />
-        </motion.div>
-
-        {/* Statistics and Source-based Tasks Grid */}
+        {/* High Attention Tasks and Task Statistics in same row */}
         <div className="grid gap-6 lg:grid-cols-2 mb-6">
           {/* Task Statistics */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
+            className="h-[600px]"
           >
             <TaskStatistics
               tasks={tasks}
@@ -74,15 +65,26 @@ export default function DashboardPage() {
             />
           </motion.div>
 
-          {/* Source-based Tasks */}
+          {/* High Attention Tasks */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="h-[600px]"
           >
-            <SourceBasedTasks tasks={tasks} />
+            <HighAttentionTasks tasks={tasks} />
           </motion.div>
         </div>
+
+        {/* Source-based Tasks - Full Width */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-6"
+        >
+          <SourceBasedTasks tasks={tasks} />
+        </motion.div>
 
         {/* Quick Actions */}
         <motion.div

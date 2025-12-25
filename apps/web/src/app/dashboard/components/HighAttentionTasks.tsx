@@ -18,8 +18,8 @@ export function HighAttentionTasks({ tasks }: HighAttentionTasksProps) {
 
   if (highAttentionTasks.length === 0) {
     return (
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
+      <Card className="p-6 flex flex-col h-full">
+        <div className="flex items-center justify-between mb-4 shrink-0">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-destructive" />
             <h2 className="text-xl font-semibold">High Attention Needed</h2>
@@ -33,8 +33,8 @@ export function HighAttentionTasks({ tasks }: HighAttentionTasksProps) {
   }
 
   return (
-    <Card className="p-6">
-      <div className="flex items-center justify-between mb-4">
+    <Card className="p-6 flex flex-col h-full">
+      <div className="flex items-center justify-between mb-4 shrink-0">
         <div className="flex items-center gap-2">
           <AlertCircle className="w-5 h-5 text-destructive" />
           <h2 className="text-xl font-semibold">High Attention Needed</h2>
@@ -49,8 +49,8 @@ export function HighAttentionTasks({ tasks }: HighAttentionTasksProps) {
         </Button>
       </div>
 
-      <div className="space-y-3">
-        {highAttentionTasks.slice(0, 5).map((task, index) => {
+      <div className="space-y-3 overflow-y-auto flex-1 pr-2">
+        {highAttentionTasks.map((task, index) => {
           const isOverdue = isTaskOverdue(task);
           const priorityColor = task.priority?.color || "#94a3b8";
 

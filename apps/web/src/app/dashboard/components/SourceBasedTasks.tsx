@@ -20,7 +20,7 @@ interface TaskListProps {
 const TaskList = ({ taskList }: TaskListProps) => (
   <div className="space-y-2">
     <AnimatePresence>
-      {taskList.slice(0, 10).map((task, index) => {
+      {taskList.map((task, index) => {
         const priorityColor = task.priority?.color || "#94a3b8";
         const statusColor = task.status?.color || "#94a3b8";
 
@@ -84,15 +84,6 @@ const TaskList = ({ taskList }: TaskListProps) => (
         );
       })}
     </AnimatePresence>
-    {taskList.length > 10 && (
-      <div className="pt-2">
-        <Button variant="ghost" size="sm" className="w-full" asChild>
-          <Link href="/dashboard/tasks">
-            View {taskList.length - 10} more tasks
-          </Link>
-        </Button>
-      </div>
-    )}
   </div>
 );
 
@@ -105,8 +96,8 @@ export function SourceBasedTasks({ tasks }: SourceBasedTasksProps) {
 
   if (allSources.length === 0 && !hasCustomTasks) {
     return (
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Tasks by Source</h2>
+      <Card className="p-6 flex flex-col h-[600px]">
+        <h2 className="text-xl font-semibold mb-4 shrink-0">Tasks by Source</h2>
         <p className="text-muted-foreground text-sm">
           No tasks found. Create your first task to get started!
         </p>
@@ -115,8 +106,8 @@ export function SourceBasedTasks({ tasks }: SourceBasedTasksProps) {
   }
 
   return (
-    <Card className="p-6">
-      <div className="flex items-center justify-between mb-4">
+    <Card className="p-6 flex flex-col h-[600px]">
+      <div className="flex items-center justify-between mb-4 shrink-0">
         <h2 className="text-xl font-semibold">Tasks by Source</h2>
         <Button variant="outline" size="sm" asChild>
           <Link href="/dashboard/tasks">View All Tasks</Link>
@@ -125,8 +116,9 @@ export function SourceBasedTasks({ tasks }: SourceBasedTasksProps) {
 
       <Tabs
         defaultValue={hasCustomTasks ? "custom" : allSources[0] || "custom"}
+        className="flex flex-col flex-1 min-h-0"
       >
-        <TabsList className="inline-flex h-10 w-full overflow-x-auto justify-start">
+        <TabsList className="inline-flex h-10 w-full overflow-x-auto justify-start shrink-0">
           {hasCustomTasks && (
             <TabsTrigger value="custom" className="shrink-0">
               Custom ({customTasks.length})
@@ -143,14 +135,18 @@ export function SourceBasedTasks({ tasks }: SourceBasedTasksProps) {
         </TabsList>
 
         {hasCustomTasks && (
-          <TabsContent value="custom" className="mt-4">
-            <TaskList taskList={customTasks} />
+          <TabsContent value="custom" className="mt-4 flex-1 min-h-0 flex flex-col">
+            <div className="overflow-y-auto flex-1 pr-2">
+              <TaskList taskList={customTasks} />
+            </div>
           </TabsContent>
         )}
 
         {allSources.map((source) => (
-          <TabsContent key={source} value={source} className="mt-4">
-            <TaskList taskList={tasksBySource[source]} />
+          <TabsContent key={source} value={source} className="mt-4 flex-1 min-h-0 flex flex-col">
+            <div className="overflow-y-auto flex-1 pr-2">
+              <TaskList taskList={tasksBySource[source]} />
+            </div>
           </TabsContent>
         ))}
       </Tabs>

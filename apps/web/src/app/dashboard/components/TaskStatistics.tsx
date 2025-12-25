@@ -39,8 +39,8 @@ export function TaskStatistics({
   const viewData = getViewData(tasks, viewType);
 
   return (
-    <Card className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <Card className="p-6 flex flex-col h-full">
+      <div className="flex items-center justify-between mb-6 shrink-0">
         <h2 className="text-xl font-semibold">Task Statistics</h2>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -68,7 +68,7 @@ export function TaskStatistics({
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 shrink-0">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -146,7 +146,7 @@ export function TaskStatistics({
           </span>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 overflow-y-auto flex-1 pr-2">
           {viewData.map((item, index) => (
             <motion.div
               key={item.label}

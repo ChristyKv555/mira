@@ -10,6 +10,8 @@ import {
 import { eq, and } from "drizzle-orm";
 import { extractUserDataOrThrow } from "@/app/api/utils/extractor";
 import { ZodError } from "zod";
+import { generateEmbedding } from "@/lib/genai/embedding";
+import { createTaskContentForEmbedding } from "../utils";
 
 export async function PATCH(
   request: NextRequest,
@@ -39,11 +41,35 @@ export async function PATCH(
       .omit({ id: true, userId: true })
       .parse(body);
 
+    const currentTask = existingTask[0];
+
+    // Check if title or description changed
+    const titleChanged =
+      validatedData.title !== undefined &&
+      validatedData.title !== currentTask.title;
+    const descriptionChanged =
+      validatedData.description !== undefined &&
+      validatedData.description !== currentTask.description;
+    const shouldRegenerateEmbedding = titleChanged || descriptionChanged;
+
     // Prepare update data (validatedData already excludes id and userId)
-    const updateData = {
+    const updateData: Record<string, unknown> = {
       ...validatedData,
       updatedAt: new Date(),
     };
+
+    // Generate and include embedding only if title or description changed
+    if (shouldRegenerateEmbedding) {
+      const newTitle = validatedData.title ?? currentTask.title;
+      const newDescription =
+        validatedData.description ?? currentTask.description;
+      const taskContent = createTaskContentForEmbedding(
+        newTitle,
+        newDescription
+      );
+      const embedding = await generateEmbedding(taskContent);
+      updateData.embedding = embedding;
+    }
 
     // Update task
     await db

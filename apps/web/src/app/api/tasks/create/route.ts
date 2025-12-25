@@ -9,6 +9,8 @@ import {
 import { eq, asc } from "drizzle-orm";
 import { extractUserDataOrThrow } from "@/app/api/utils/extractor";
 import { insertTaskSchema } from "@/database/schema/tasks";
+import { generateEmbedding } from "@/lib/genai/embedding";
+import { createTaskContentForEmbedding } from "../utils";
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,7 +42,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Insert task
+    // Generate embedding for task content
+    const taskContent = createTaskContentForEmbedding(
+      validatedData.title,
+      validatedData.description || null
+    );
+    const embedding = await generateEmbedding(taskContent);
+
+    // Insert task with embedding
     const [newTask] = await db
       .insert(tasks)
       .values({
@@ -51,6 +60,7 @@ export async function POST(request: NextRequest) {
         priorityId: validatedData.priorityId || null,
         sourceEventId: validatedData.sourceEventId || null,
         dueDate: validatedData.dueDate || null,
+        embedding: embedding,
       })
       .returning();
 

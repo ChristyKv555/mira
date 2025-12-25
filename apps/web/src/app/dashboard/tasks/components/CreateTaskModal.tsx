@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -72,6 +73,7 @@ export function CreateTaskModal({
     string | undefined
   >(() => getInitialValues().selectedPriorityId);
   const [dueDate, setDueDate] = useState(() => getInitialValues().dueDate);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Track previous task ID to detect changes
   const prevTaskIdRef = useRef<string | undefined>(task?.id);
@@ -89,6 +91,11 @@ export function CreateTaskModal({
       setSelectedStatusId(values.selectedStatusId);
       setSelectedPriorityId(values.selectedPriorityId);
       setDueDate(values.dueDate);
+    }
+
+    // Reset loading state when modal closes
+    if (!open) {
+      setIsLoading(false);
     }
 
     prevTaskIdRef.current = task?.id;
@@ -112,8 +119,9 @@ export function CreateTaskModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || isLoading) return;
 
+    setIsLoading(true);
     try {
       await onSubmit({
         title: title.trim(),
@@ -135,6 +143,8 @@ export function CreateTaskModal({
     } catch {
       // Error handling is done in parent component
       // Don't close modal on error
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -256,11 +266,19 @@ export function CreateTaskModal({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={isLoading}
             >
               Cancel
             </Button>
-            <Button type="submit">
-              {task ? "Update Task" : "Create Task"}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {task ? "Updating..." : "Creating..."}
+                </>
+              ) : (
+                task ? "Update Task" : "Create Task"
+              )}
             </Button>
           </DialogFooter>
         </form>

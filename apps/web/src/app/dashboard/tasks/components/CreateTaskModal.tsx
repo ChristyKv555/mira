@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -40,8 +40,7 @@ export function CreateTaskModal({
   task,
   onSubmit,
 }: CreateTaskModalProps) {
-  // Compute initial values based on task prop
-  const initialValues = useMemo(() => {
+  const getInitialValues = () => {
     if (task) {
       return {
         title: task.title,
@@ -60,28 +59,53 @@ export function CreateTaskModal({
       selectedPriorityId: undefined,
       dueDate: "",
     };
-  }, [task, defaultStatusId]);
+  };
 
-  const [title, setTitle] = useState(initialValues.title);
-  const [description, setDescription] = useState(initialValues.description);
+  const [title, setTitle] = useState(() => getInitialValues().title);
+  const [description, setDescription] = useState(
+    () => getInitialValues().description
+  );
   const [selectedStatusId, setSelectedStatusId] = useState<string | undefined>(
-    initialValues.selectedStatusId
+    () => getInitialValues().selectedStatusId
   );
   const [selectedPriorityId, setSelectedPriorityId] = useState<
     string | undefined
-  >(initialValues.selectedPriorityId);
-  const [dueDate, setDueDate] = useState(initialValues.dueDate);
+  >(() => getInitialValues().selectedPriorityId);
+  const [dueDate, setDueDate] = useState(() => getInitialValues().dueDate);
 
-  // Reset form when modal opens or task changes
+  // Track previous task ID to detect changes
+  const prevTaskIdRef = useRef<string | undefined>(task?.id);
+  const prevOpenRef = useRef(open);
+
+  // Update form when modal opens or task changes
   useEffect(() => {
-    if (open) {
-      setTitle(initialValues.title);
-      setDescription(initialValues.description);
-      setSelectedStatusId(initialValues.selectedStatusId);
-      setSelectedPriorityId(initialValues.selectedPriorityId);
-      setDueDate(initialValues.dueDate);
+    const taskChanged = prevTaskIdRef.current !== task?.id;
+    const modalJustOpened = open && !prevOpenRef.current;
+
+    if ((open && taskChanged) || modalJustOpened) {
+      const values = getInitialValues();
+      setTitle(values.title);
+      setDescription(values.description);
+      setSelectedStatusId(values.selectedStatusId);
+      setSelectedPriorityId(values.selectedPriorityId);
+      setDueDate(values.dueDate);
     }
-  }, [open, initialValues]);
+
+    prevTaskIdRef.current = task?.id;
+    prevOpenRef.current = open;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    open,
+    task?.id,
+    task?.title,
+    task?.description,
+    task?.statusId,
+    task?.priorityId,
+    task?.dueDate,
+    defaultStatusId,
+  ]);
+
+  const formKey = `${task?.id || "new"}-${open}`;
 
   const selectedStatus = statuses.find((s) => s.id === selectedStatusId);
   const selectedPriority = priorities.find((p) => p.id === selectedPriorityId);
@@ -126,7 +150,7 @@ export function CreateTaskModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form key={formKey} onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">Title *</Label>
             <Input

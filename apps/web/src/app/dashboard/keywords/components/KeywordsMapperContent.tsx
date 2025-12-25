@@ -1,14 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import type { TaskStatus, TaskPriority } from "../../tasks/types";
+import {
+  useGetPriorityMappingsQuery,
+  useCreatePriorityMappingMutation,
+  useUpdatePriorityMappingMutation,
+  useGetStatusMappingsQuery,
+  useCreateStatusMappingMutation,
+  useUpdateStatusMappingMutation,
+} from "../store/keywordsApi";
 
 interface KeywordsMapperContentProps {
   priorities: TaskPriority[];
@@ -29,8 +37,43 @@ export function KeywordsMapperContent({
 }: KeywordsMapperContentProps) {
   const [keywordInput, setKeywordInput] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
+  const [mappingId, setMappingId] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [keywordToDelete, setKeywordToDelete] = useState<string | null>(null);
+
+  // API hooks for priority mappings
+  const { data: priorityMappingsData, isLoading: priorityMappingsLoading } =
+    useGetPriorityMappingsQuery(
+      selectedItemId && selectedType === "priority"
+        ? { priorityId: selectedItemId }
+        : undefined,
+      { skip: !selectedItemId || selectedType !== "priority" }
+    );
+
+  const [createPriorityMapping, { isLoading: isCreatingPriority }] =
+    useCreatePriorityMappingMutation();
+  const [updatePriorityMapping, { isLoading: isUpdatingPriority }] =
+    useUpdatePriorityMappingMutation();
+
+  // API hooks for status mappings
+  const { data: statusMappingsData, isLoading: statusMappingsLoading } =
+    useGetStatusMappingsQuery(
+      selectedItemId && selectedType === "status"
+        ? { statusId: selectedItemId }
+        : undefined,
+      { skip: !selectedItemId || selectedType !== "status" }
+    );
+
+  const [createStatusMapping, { isLoading: isCreatingStatus }] =
+    useCreateStatusMappingMutation();
+  const [updateStatusMapping, { isLoading: isUpdatingStatus }] =
+    useUpdateStatusMappingMutation();
+
+  // Determine if add button should show loading state
+  const isAddingKeyword =
+    (selectedType === "priority" &&
+      (isCreatingPriority || isUpdatingPriority)) ||
+    (selectedType === "status" && (isCreatingStatus || isUpdatingStatus));
 
   // Get the selected item based on type
   const selectedItem =
@@ -41,34 +84,97 @@ export function KeywordsMapperContent({
   // Get items list based on selected type
   const items = selectedType === "priority" ? priorities : statuses;
 
+  // Load keywords when mapping data changes
+  useEffect(() => {
+    if (selectedType === "priority" && priorityMappingsData?.mappings) {
+      const mapping = priorityMappingsData.mappings[0];
+      if (mapping) {
+        setKeywords(mapping.keywords || []);
+        setMappingId(mapping.id);
+      } else {
+        setKeywords([]);
+        setMappingId(null);
+      }
+    } else if (selectedType === "status" && statusMappingsData?.mappings) {
+      const mapping = statusMappingsData.mappings[0];
+      if (mapping) {
+        setKeywords(mapping.keywords || []);
+        setMappingId(mapping.id);
+      } else {
+        setKeywords([]);
+        setMappingId(null);
+      }
+    }
+  }, [priorityMappingsData, statusMappingsData, selectedType, selectedItemId]);
+
   const handleTypeChange = (type: "priority" | "status") => {
     onTypeChange(type);
     onItemSelect(null); // Reset selection when switching type
     setKeywords([]); // Clear keywords when switching
+    setMappingId(null);
   };
 
   const handleItemClick = (id: string) => {
     if (selectedItemId === id) {
       onItemSelect(null); // Deselect if clicking the same item
       setKeywords([]);
+      setMappingId(null);
     } else {
       onItemSelect(id);
-      // TODO: Load existing keywords for this item from API
-      setKeywords([]);
     }
   };
 
-  const handleKeywordSubmit = (e: React.FormEvent) => {
+  const handleKeywordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedKeyword = keywordInput.trim();
     if (
-      trimmedKeyword &&
-      trimmedKeyword.length <= 50 &&
-      !keywords.includes(trimmedKeyword)
+      !trimmedKeyword ||
+      trimmedKeyword.length > 50 ||
+      keywords.includes(trimmedKeyword)
     ) {
-      setKeywords([...keywords, trimmedKeyword]);
+      return;
+    }
+
+    const newKeywords = [...keywords, trimmedKeyword];
+
+    try {
+      if (selectedType === "priority" && selectedItemId) {
+        if (mappingId) {
+          // Update existing mapping
+          await updatePriorityMapping({
+            id: mappingId,
+            keywords: newKeywords,
+          }).unwrap();
+        } else {
+          // Create new mapping
+          const result = await createPriorityMapping({
+            priorityId: selectedItemId,
+            keywords: newKeywords,
+          }).unwrap();
+          setMappingId(result.mapping.id);
+        }
+      } else if (selectedType === "status" && selectedItemId) {
+        if (mappingId) {
+          // Update existing mapping
+          await updateStatusMapping({
+            id: mappingId,
+            keywords: newKeywords,
+          }).unwrap();
+        } else {
+          // Create new mapping
+          const result = await createStatusMapping({
+            statusId: selectedItemId,
+            keywords: newKeywords,
+          }).unwrap();
+          setMappingId(result.mapping.id);
+        }
+      }
+
+      setKeywords(newKeywords);
       setKeywordInput("");
-      // TODO: Save keyword to API
+    } catch (error) {
+      console.error("Error saving keyword:", error);
+      alert("Failed to save keyword. Please try again.");
     }
   };
 
@@ -77,11 +183,29 @@ export function KeywordsMapperContent({
     setDeleteConfirmOpen(true);
   };
 
-  const confirmDeleteKeyword = () => {
-    if (keywordToDelete) {
-      setKeywords(keywords.filter((k) => k !== keywordToDelete));
+  const confirmDeleteKeyword = async () => {
+    if (!keywordToDelete || !selectedItemId) return;
+
+    const newKeywords = keywords.filter((k) => k !== keywordToDelete);
+
+    try {
+      if (selectedType === "priority" && mappingId) {
+        await updatePriorityMapping({
+          id: mappingId,
+          keywords: newKeywords,
+        }).unwrap();
+      } else if (selectedType === "status" && mappingId) {
+        await updateStatusMapping({
+          id: mappingId,
+          keywords: newKeywords,
+        }).unwrap();
+      }
+
+      setKeywords(newKeywords);
       setKeywordToDelete(null);
-      // TODO: Delete keyword from API
+    } catch (error) {
+      console.error("Error deleting keyword:", error);
+      alert("Failed to delete keyword. Please try again.");
     }
   };
 
@@ -149,53 +273,71 @@ export function KeywordsMapperContent({
         <h2 className="text-lg font-semibold mb-4">Keywords</h2>
         {selectedItem ? (
           <>
-            <div className="mb-4">
-              <p className="text-sm text-muted-foreground mb-2">
-                Add keywords or phrases (max 50 characters) for:{" "}
-                <span className="font-medium">{selectedItem.label}</span>
-              </p>
-              <form onSubmit={handleKeywordSubmit} className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="Enter keyword or phrase..."
-                  value={keywordInput}
-                  onChange={(e) => setKeywordInput(e.target.value)}
-                  maxLength={50}
-                  className="flex-1"
-                />
-                <Button type="submit" disabled={!keywordInput.trim()}>
-                  Add
-                </Button>
-              </form>
-            </div>
-
-            <div className="space-y-3">
-              {keywords.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No keywords added yet. Add keywords above to help AI
-                  categorize tasks.
-                </p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {keywords.map((keyword) => (
-                    <Badge
-                      key={keyword}
-                      variant="secondary"
-                      className="px-3 py-1.5 text-sm flex items-center gap-2"
+            {priorityMappingsLoading || statusMappingsLoading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Loading keywords...</p>
+              </div>
+            ) : (
+              <>
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Add keywords or phrases (max 50 characters) for:{" "}
+                    <span className="font-medium">{selectedItem.label}</span>
+                  </p>
+                  <form onSubmit={handleKeywordSubmit} className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Enter keyword or phrase..."
+                      value={keywordInput}
+                      onChange={(e) => setKeywordInput(e.target.value)}
+                      maxLength={50}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="submit"
+                      disabled={!keywordInput.trim() || isAddingKeyword}
                     >
-                      <span>{keyword}</span>
-                      <button
-                        onClick={() => handleDeleteKeyword(keyword)}
-                        className="hover:text-destructive transition-colors"
-                        aria-label={`Delete ${keyword}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
+                      {isAddingKeyword ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Adding...
+                        </>
+                      ) : (
+                        "Add"
+                      )}
+                    </Button>
+                  </form>
                 </div>
-              )}
-            </div>
+
+                <div className="space-y-3">
+                  {keywords.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No keywords added yet. Add keywords above to help AI
+                      categorize tasks.
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {keywords.map((keyword) => (
+                        <Badge
+                          key={keyword}
+                          variant="secondary"
+                          className="px-3 py-1.5 text-sm flex items-center gap-2"
+                        >
+                          <span>{keyword}</span>
+                          <button
+                            onClick={() => handleDeleteKeyword(keyword)}
+                            className="hover:text-destructive transition-colors"
+                            aria-label={`Delete ${keyword}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </>
         ) : (
           <div className="text-center py-12">

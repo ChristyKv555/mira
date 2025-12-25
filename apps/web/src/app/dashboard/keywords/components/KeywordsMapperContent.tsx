@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,7 @@ export function KeywordsMapperContent({
   const [mappingId, setMappingId] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [keywordToDelete, setKeywordToDelete] = useState<string | null>(null);
+  const lastProcessedMappingIdRef = useRef<string | null>(null);
 
   // API hooks for priority mappings
   const { data: priorityMappingsData, isLoading: priorityMappingsLoading } =
@@ -70,7 +71,7 @@ export function KeywordsMapperContent({
     useUpdateStatusMappingMutation();
 
   // Determine if add button should show loading state
-  const isAddingKeyword =
+  const isTagOperationLoading =
     (selectedType === "priority" &&
       (isCreatingPriority || isUpdatingPriority)) ||
     (selectedType === "status" && (isCreatingStatus || isUpdatingStatus));
@@ -86,24 +87,27 @@ export function KeywordsMapperContent({
 
   // Load keywords when mapping data changes
   useEffect(() => {
+    let newMappingId: string | null = null;
+    let newKeywords: string[] = [];
+
     if (selectedType === "priority" && priorityMappingsData?.mappings) {
       const mapping = priorityMappingsData.mappings[0];
-      if (mapping) {
-        setKeywords(mapping.keywords || []);
-        setMappingId(mapping.id);
-      } else {
-        setKeywords([]);
-        setMappingId(null);
-      }
+      newKeywords = mapping?.keywords || [];
+      newMappingId = mapping?.id || null;
     } else if (selectedType === "status" && statusMappingsData?.mappings) {
       const mapping = statusMappingsData.mappings[0];
-      if (mapping) {
-        setKeywords(mapping.keywords || []);
-        setMappingId(mapping.id);
-      } else {
-        setKeywords([]);
-        setMappingId(null);
-      }
+      newKeywords = mapping?.keywords || [];
+      newMappingId = mapping?.id || null;
+    }
+
+    // Only update state if the mapping ID has changed (avoid cascading renders)
+    if (lastProcessedMappingIdRef.current !== newMappingId) {
+      lastProcessedMappingIdRef.current = newMappingId;
+      // Use setTimeout to defer state updates and avoid synchronous setState in effect
+      setTimeout(() => {
+        setKeywords(newKeywords);
+        setMappingId(newMappingId);
+      }, 0);
     }
   }, [priorityMappingsData, statusMappingsData, selectedType, selectedItemId]);
 
@@ -112,6 +116,7 @@ export function KeywordsMapperContent({
     onItemSelect(null); // Reset selection when switching type
     setKeywords([]); // Clear keywords when switching
     setMappingId(null);
+    lastProcessedMappingIdRef.current = null; // Reset ref
   };
 
   const handleItemClick = (id: string) => {
@@ -295,12 +300,11 @@ export function KeywordsMapperContent({
                     />
                     <Button
                       type="submit"
-                      disabled={!keywordInput.trim() || isAddingKeyword}
+                      disabled={!keywordInput.trim() || isTagOperationLoading}
                     >
-                      {isAddingKeyword ? (
+                      {isTagOperationLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Adding...
                         </>
                       ) : (
                         "Add"

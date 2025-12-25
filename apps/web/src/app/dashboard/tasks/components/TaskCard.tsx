@@ -1,16 +1,25 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Calendar } from "lucide-react";
+import { Calendar, MoreVertical, Edit, Trash2 } from "lucide-react";
 import type { Task } from "../types";
 import { Card } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 interface TaskCardProps {
   task: Task;
   onClick: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }
 
-export function TaskCard({ task, onClick }: TaskCardProps) {
+export function TaskCard({ task, onClick, onEdit, onDelete }: TaskCardProps) {
   const priorityColor = task.priority?.color || "#94a3b8";
   const statusColor = task.status?.color || "#94a3b8";
 
@@ -34,11 +43,15 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
             {task.title}
           </h3>
           {task.priority && (
-            <div
-              className="w-3 h-3 rounded-full shrink-0 mt-1"
-              style={{ backgroundColor: priorityColor }}
-              title={task.priority.label}
-            />
+            <span
+              className="text-xs font-medium px-2 py-0.5 rounded shrink-0"
+              style={{
+                backgroundColor: `${priorityColor}20`,
+                color: priorityColor,
+              }}
+            >
+              {task.priority.label}
+            </span>
           )}
         </div>
 
@@ -67,9 +80,51 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
             )}
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
-              {task.id.substring(0, 2).toUpperCase()}
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 hover:bg-accent"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                  }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    onEdit();
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    onDelete();
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </Card>

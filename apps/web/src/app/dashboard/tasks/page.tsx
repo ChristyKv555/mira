@@ -8,6 +8,7 @@ import {
   useGetPrioritiesQuery,
   useCreateTaskMutation,
   useUpdateTaskMutation,
+  useDeleteTaskMutation,
   useCreateStatusMutation,
   useCreatePriorityMutation,
 } from "./store/tasksApi";
@@ -30,6 +31,7 @@ import { TaskDetailModal } from "./components/TaskDetailModal";
 import { CreateStatusModal } from "./components/CreateStatusModal";
 import { CreatePriorityModal } from "./components/CreatePriorityModal";
 import { EmptyState } from "./components/EmptyState";
+import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import { LoadingSpinner } from "../connect/components/LoadingSpinner";
 import type {
   Task,
@@ -51,9 +53,16 @@ export default function TasksPage() {
   const [createTaskStatusId, setCreateTaskStatusId] = useState<
     string | undefined
   >();
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
 
   // API queries
-  const { data: tasksData, isLoading: tasksLoading } = useGetTasksQuery();
+  const {
+    data: tasksData,
+    isLoading: tasksLoading,
+    refetch: refetchTasks,
+  } = useGetTasksQuery();
   const { data: statusesData, isLoading: statusesLoading } =
     useGetStatusesQuery();
   const { data: prioritiesData, isLoading: prioritiesLoading } =
@@ -62,6 +71,7 @@ export default function TasksPage() {
   // Mutations
   const [createTask] = useCreateTaskMutation();
   const [updateTaskMutation] = useUpdateTaskMutation();
+  const [deleteTaskMutation] = useDeleteTaskMutation();
   const [createStatus] = useCreateStatusMutation();
   const [createPriority] = useCreatePriorityMutation();
 
@@ -119,12 +129,23 @@ export default function TasksPage() {
 
   const handleCreateTask = async (input: CreateTaskInput) => {
     try {
-      const result = await createTask(input).unwrap();
-      dispatch(addTask(result.task));
+      if (editingTask) {
+        // Update existing task
+        const result = await updateTaskMutation({
+          id: editingTask.id,
+          ...input,
+        }).unwrap();
+        dispatch(updateTask({ id: editingTask.id, updates: result.task }));
+      } else {
+        // Create new task
+        const result = await createTask(input).unwrap();
+        dispatch(addTask(result.task));
+      }
       setCreateTaskModalOpen(false);
       setCreateTaskStatusId(undefined);
+      setEditingTask(null);
     } catch (error) {
-      console.error("Error creating task:", error);
+      console.error("Error saving task:", error);
       const errorMessage =
         (error &&
         typeof error === "object" &&
@@ -134,7 +155,8 @@ export default function TasksPage() {
         "error" in error.data &&
         typeof error.data.error === "string"
           ? error.data.error
-          : null) || "Failed to create task. Please try again.";
+          : null) ||
+        `Failed to ${editingTask ? "update" : "create"} task. Please try again.`;
       alert(errorMessage);
     }
   };
@@ -184,8 +206,46 @@ export default function TasksPage() {
   };
 
   const handleCreateTaskClick = (statusId?: string) => {
+    setEditingTask(null);
     setCreateTaskStatusId(statusId);
     setCreateTaskModalOpen(true);
+  };
+
+  const handleTaskEdit = (task: Task) => {
+    setEditingTask(task);
+    setCreateTaskStatusId(task.statusId || undefined);
+    setCreateTaskModalOpen(true);
+  };
+
+  const handleTaskDelete = (taskId: string) => {
+    setTaskToDelete(taskId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!taskToDelete) return;
+
+    try {
+      await deleteTaskMutation(taskToDelete).unwrap();
+      // Close confirmation modal
+      setDeleteConfirmOpen(false);
+      setTaskToDelete(null);
+      // Refetch tasks to update the UI
+      await refetchTasks();
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      const errorMessage =
+        (error &&
+        typeof error === "object" &&
+        "data" in error &&
+        error.data &&
+        typeof error.data === "object" &&
+        "error" in error.data &&
+        typeof error.data.error === "string"
+          ? error.data.error
+          : null) || "Failed to delete task. Please try again.";
+      alert(errorMessage);
+    }
   };
 
   if (tasksLoading || statusesLoading || prioritiesLoading) {
@@ -218,16 +278,24 @@ export default function TasksPage() {
             onTaskClick={handleTaskClick}
             onTaskMove={handleTaskMove}
             onCreateTask={handleCreateTaskClick}
+            onTaskEdit={handleTaskEdit}
+            onTaskDelete={handleTaskDelete}
           />
         )}
 
         {/* Modals */}
         <CreateTaskModal
           open={createTaskModalOpen}
-          onOpenChange={setCreateTaskModalOpen}
+          onOpenChange={(open) => {
+            setCreateTaskModalOpen(open);
+            if (!open) {
+              setEditingTask(null);
+            }
+          }}
           statuses={statuses}
           priorities={priorities}
           defaultStatusId={createTaskStatusId}
+          task={editingTask}
           onSubmit={handleCreateTask}
         />
 
@@ -247,6 +315,17 @@ export default function TasksPage() {
           open={createPriorityModalOpen}
           onOpenChange={setCreatePriorityModalOpen}
           onSubmit={handleCreatePriority}
+        />
+
+        <ConfirmationModal
+          open={deleteConfirmOpen}
+          onOpenChange={setDeleteConfirmOpen}
+          title="Delete Task"
+          description="Are you sure you want to delete this task? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          confirmVariant="destructive"
+          onConfirm={confirmDelete}
         />
       </div>
     </div>

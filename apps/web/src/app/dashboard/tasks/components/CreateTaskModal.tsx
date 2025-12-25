@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { TaskStatus, TaskPriority, CreateTaskInput } from "../types";
+import type { TaskStatus, TaskPriority, CreateTaskInput, Task } from "../types";
 
 interface CreateTaskModalProps {
   open: boolean;
@@ -27,6 +27,7 @@ interface CreateTaskModalProps {
   statuses: TaskStatus[];
   priorities: TaskPriority[];
   defaultStatusId?: string;
+  task?: Task | null;
   onSubmit: (input: CreateTaskInput) => Promise<void>;
 }
 
@@ -36,17 +37,51 @@ export function CreateTaskModal({
   statuses,
   priorities,
   defaultStatusId,
+  task,
   onSubmit,
 }: CreateTaskModalProps) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  // Compute initial values based on task prop
+  const initialValues = useMemo(() => {
+    if (task) {
+      return {
+        title: task.title,
+        description: task.description || "",
+        selectedStatusId: task.statusId || defaultStatusId,
+        selectedPriorityId: task.priorityId || undefined,
+        dueDate: task.dueDate
+          ? new Date(task.dueDate).toISOString().split("T")[0]
+          : "",
+      };
+    }
+    return {
+      title: "",
+      description: "",
+      selectedStatusId: defaultStatusId,
+      selectedPriorityId: undefined,
+      dueDate: "",
+    };
+  }, [task, defaultStatusId]);
+
+  const [title, setTitle] = useState(initialValues.title);
+  const [description, setDescription] = useState(initialValues.description);
   const [selectedStatusId, setSelectedStatusId] = useState<string | undefined>(
-    defaultStatusId
+    initialValues.selectedStatusId
   );
   const [selectedPriorityId, setSelectedPriorityId] = useState<
     string | undefined
-  >();
-  const [dueDate, setDueDate] = useState("");
+  >(initialValues.selectedPriorityId);
+  const [dueDate, setDueDate] = useState(initialValues.dueDate);
+
+  // Reset form when modal opens or task changes
+  useEffect(() => {
+    if (open) {
+      setTitle(initialValues.title);
+      setDescription(initialValues.description);
+      setSelectedStatusId(initialValues.selectedStatusId);
+      setSelectedPriorityId(initialValues.selectedPriorityId);
+      setDueDate(initialValues.dueDate);
+    }
+  }, [open, initialValues]);
 
   const selectedStatus = statuses.find((s) => s.id === selectedStatusId);
   const selectedPriority = priorities.find((p) => p.id === selectedPriorityId);
@@ -64,26 +99,30 @@ export function CreateTaskModal({
         dueDate: dueDate || undefined,
       });
 
-      // Reset form only on success
-      setTitle("");
-      setDescription("");
-      setSelectedStatusId(defaultStatusId);
-      setSelectedPriorityId(undefined);
-      setDueDate("");
+      // Reset form only on success (if not editing)
+      if (!task) {
+        setTitle("");
+        setDescription("");
+        setSelectedStatusId(defaultStatusId);
+        setSelectedPriorityId(undefined);
+        setDueDate("");
+      }
       onOpenChange(false);
-    } catch (error) {
+    } catch {
       // Error handling is done in parent component
       // Don't close modal on error
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} key={task?.id || "new"}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
+          <DialogTitle>{task ? "Edit Task" : "Create New Task"}</DialogTitle>
           <DialogDescription>
-            Add a new task to your board. Fill in the details below.
+            {task
+              ? "Update the task details below."
+              : "Add a new task to your board. Fill in the details below."}
           </DialogDescription>
         </DialogHeader>
 
@@ -196,7 +235,9 @@ export function CreateTaskModal({
             >
               Cancel
             </Button>
-            <Button type="submit">Create Task</Button>
+            <Button type="submit">
+              {task ? "Update Task" : "Create Task"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

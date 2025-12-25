@@ -49,14 +49,13 @@ export function CreateStatusModal({
       setOrder(0);
       onOpenChange(false);
     } catch (error) {
-      // Error handling is done in parent component
-      // Don't close modal on error
+      console.log(error);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent key={open ? "open" : "closed"}>
         <DialogHeader>
           <DialogTitle>Create New Status</DialogTitle>
           <DialogDescription>

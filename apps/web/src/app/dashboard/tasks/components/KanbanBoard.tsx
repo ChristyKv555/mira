@@ -13,6 +13,8 @@ interface KanbanBoardProps {
   onTaskClick: (task: Task) => void;
   onTaskMove: (taskId: string, newStatusId: string) => void;
   onCreateTask: (statusId: string) => void;
+  onTaskEdit: (task: Task) => void;
+  onTaskDelete: (taskId: string) => void;
 }
 
 export function KanbanBoard({
@@ -21,6 +23,8 @@ export function KanbanBoard({
   onTaskClick,
   onTaskMove,
   onCreateTask,
+  onTaskEdit,
+  onTaskDelete,
 }: KanbanBoardProps) {
   const tasksByStatus = useMemo(() => {
     const grouped: Record<string, Task[]> = {};
@@ -132,6 +136,8 @@ export function KanbanBoard({
                         <TaskCard
                           task={task}
                           onClick={() => onTaskClick(task)}
+                          onEdit={() => onTaskEdit(task)}
+                          onDelete={() => onTaskDelete(task.id)}
                         />
                       </div>
                     ))}

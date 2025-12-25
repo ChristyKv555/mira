@@ -5,9 +5,11 @@ import {
   taskStatuses,
   taskPriorities,
   sourceEvents,
+  updateTaskSchema,
 } from "@/database/schema";
 import { eq, and } from "drizzle-orm";
 import { extractUserDataOrThrow } from "@/app/api/utils/extractor";
+import { ZodError } from "zod";
 
 export async function PATCH(
   request: NextRequest,
@@ -32,22 +34,16 @@ export async function PATCH(
       );
     }
 
-    // Prepare update data (only include provided fields)
-    const updateData: Partial<typeof tasks.$inferInsert> = {};
-    if (body.title !== undefined) updateData.title = body.title;
-    if (body.description !== undefined)
-      updateData.description = body.description;
-    if (body.statusId !== undefined) updateData.statusId = body.statusId;
-    if (body.priorityId !== undefined) updateData.priorityId = body.priorityId;
-    if (body.dueDate !== undefined) {
-      if (body.dueDate === null || body.dueDate === "") {
-        updateData.dueDate = null;
-      } else {
-        const date = new Date(body.dueDate);
-        updateData.dueDate = isNaN(date.getTime()) ? null : date;
-      }
-    }
-    updateData.updatedAt = new Date();
+    // Validate input using Zod schema (omit id and userId as they come from params/userData)
+    const validatedData = updateTaskSchema
+      .omit({ id: true, userId: true })
+      .parse(body);
+
+    // Prepare update data (validatedData already excludes id and userId)
+    const updateData = {
+      ...validatedData,
+      updatedAt: new Date(),
+    };
 
     // Update task
     await db
@@ -129,6 +125,12 @@ export async function PATCH(
     });
   } catch (error) {
     console.error("Error updating task:", error);
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: "Invalid input data", details: error.issues },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: "Failed to update task" },
       { status: 500 }

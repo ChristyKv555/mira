@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/database";
 import { taskStatuses } from "@/database/schema";
+import { updateStatusSchema } from "@/database/schema/taskStatuses";
 import { eq, and } from "drizzle-orm";
 import { extractUserDataOrThrow } from "@/app/api/utils/extractor";
+import { ZodError } from "zod";
 
 export async function PATCH(
   request: NextRequest,
@@ -32,12 +34,13 @@ export async function PATCH(
       );
     }
 
-    // Validate and prepare update data
-    const updateData: Partial<typeof taskStatuses.$inferInsert> = {};
-    if (body.label !== undefined) updateData.label = body.label;
-    if (body.key !== undefined) updateData.key = body.key;
-    if (body.color !== undefined) updateData.color = body.color;
-    if (body.order !== undefined) updateData.order = body.order;
+    // Validate input using Zod schema (omit id and userId as they come from params/userData)
+    const validatedData = updateStatusSchema
+      .omit({ id: true, userId: true })
+      .parse(body);
+
+    // Prepare update data (validatedData already excludes id and userId)
+    const updateData = validatedData;
 
     // Update status
     const [updatedStatus] = await db
@@ -59,6 +62,12 @@ export async function PATCH(
     });
   } catch (error) {
     console.error("Error updating status:", error);
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: "Invalid input data", details: error.issues },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: "Failed to update status" },
       { status: 500 }

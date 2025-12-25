@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/database";
 import { taskPriorities } from "@/database/schema";
+import { updatePrioritySchema } from "@/database/schema/taskPriorities";
 import { eq, and } from "drizzle-orm";
 import { extractUserDataOrThrow } from "@/app/api/utils/extractor";
+import { ZodError } from "zod";
 
 export async function PATCH(
   request: NextRequest,
@@ -32,12 +34,13 @@ export async function PATCH(
       );
     }
 
-    // Prepare update data
-    const updateData: Partial<typeof taskPriorities.$inferInsert> = {};
-    if (body.label !== undefined) updateData.label = body.label;
-    if (body.key !== undefined) updateData.key = body.key;
-    if (body.level !== undefined) updateData.level = body.level;
-    if (body.color !== undefined) updateData.color = body.color;
+    // Validate input using Zod schema (omit id and userId as they come from params/userData)
+    const validatedData = updatePrioritySchema
+      .omit({ id: true, userId: true })
+      .parse(body);
+
+    // Prepare update data (validatedData already excludes id and userId)
+    const updateData = validatedData;
 
     // Update priority
     const [updatedPriority] = await db
@@ -59,6 +62,12 @@ export async function PATCH(
     });
   } catch (error) {
     console.error("Error updating priority:", error);
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: "Invalid input data", details: error.issues },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: "Failed to update priority" },
       { status: 500 }
@@ -101,4 +110,3 @@ export async function DELETE(
     );
   }
 }
-

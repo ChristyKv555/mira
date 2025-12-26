@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Send, Wand2, MessageSquare } from "lucide-react";
+import { Sparkles, Send, Wand2, MessageSquare, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -12,6 +12,11 @@ export default function AskAIPage() {
   const [mode, setMode] = useState<"ask" | "generate">("ask");
   const [input, setInput] = useState("");
   const { sidebarWidth } = useSidebar();
+
+  const handleNewChat = () => {
+    setInput("");
+    // TODO: Create new chat session and reset chat history
+  };
 
   return (
     <div className="flex flex-col h-full bg-background relative">
@@ -145,8 +150,16 @@ export default function AskAIPage() {
         style={{ left: `${sidebarWidth}px` }}
       >
         <div className="container mx-auto px-4 py-4">
-          <div className="max-w-3xl mx-auto">
-            <div className="relative">
+          <div className="max-w-3xl mx-auto flex items-center gap-2">
+            <Button
+              size="icon"
+              className="h-8 w-8"
+              onClick={handleNewChat}
+              title="New chat"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+            <div className="relative flex-1">
               <Textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -175,10 +188,10 @@ export default function AskAIPage() {
                 <Send className="w-4 h-4" />
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2 text-center">
-              AI can make mistakes. Check important info.
-            </p>
           </div>
+          <p className="text-xs text-muted-foreground mt-2 text-center">
+            AI can make mistakes. Check important info.
+          </p>
         </div>
       </div>
     </div>

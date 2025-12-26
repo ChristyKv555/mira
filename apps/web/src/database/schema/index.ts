@@ -6,4 +6,6 @@ export * from "./priorityMappings";
 export * from "./statusMappings";
 export * from "./integrations";
 export * from "./sourceEvents";
+export * from "./chatSessions";
+export * from "./chatMessages";
 export * from "./validation";

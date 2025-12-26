@@ -1,21 +1,10 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { Integration } from "../types";
-import { getApiBaseUrl } from "@/utils/api";
+import { baseApi } from "@/utils/api/baseQuery";
 
-const apiBaseUrl = getApiBaseUrl("/api/integrations");
-
-export const integrationsApi = createApi({
-  reducerPath: "integrationsApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: apiBaseUrl,
-    prepareHeaders: (headers) => {
-      return headers;
-    },
-  }),
-  tagTypes: ["Integrations"],
+export const integrationsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getIntegrations: builder.query<{ integrations: Integration[] }, void>({
-      query: () => "/list",
+      query: () => "/api/integrations/list",
       providesTags: ["Integrations"],
     }),
     connectIntegration: builder.mutation<
@@ -23,7 +12,7 @@ export const integrationsApi = createApi({
       { platform: string }
     >({
       query: (body) => ({
-        url: "/connect",
+        url: "/api/integrations/connect",
         method: "POST",
         body,
       }),
@@ -34,7 +23,7 @@ export const integrationsApi = createApi({
       { integrationId: string }
     >({
       query: (body) => ({
-        url: "/disconnect",
+        url: "/api/integrations/disconnect",
         method: "POST",
         body,
       }),
@@ -48,3 +37,4 @@ export const {
   useConnectIntegrationMutation,
   useDisconnectIntegrationMutation,
 } = integrationsApi;
+

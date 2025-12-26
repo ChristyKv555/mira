@@ -11,7 +11,7 @@ import {
   useDeleteTaskMutation,
   useCreateStatusMutation,
   useCreatePriorityMutation,
-} from "./store/tasksApi";
+} from "./queries/tasksApi";
 import {
   setTasks,
   setStatuses,

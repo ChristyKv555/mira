@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   useGetIntegrationsQuery,
   useConnectIntegrationMutation,
-} from "./store/integrationsApi";
+} from "./queries/integrationsApi";
 import { ConnectHeader } from "./components/ConnectHeader";
 import { IntegrationsGrid } from "./components/IntegrationsGrid";
 import { ConnectionsList } from "./components/ConnectionsList";

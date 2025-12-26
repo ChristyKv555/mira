@@ -16,7 +16,7 @@ import {
   useGetStatusMappingsQuery,
   useCreateStatusMappingMutation,
   useUpdateStatusMappingMutation,
-} from "../store/keywordsApi";
+} from "../queries/keywordsApi";
 
 interface KeywordsMapperContentProps {
   priorities: TaskPriority[];

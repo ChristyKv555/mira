@@ -1,4 +1,3 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type {
   Task,
   TaskStatus,
@@ -9,19 +8,9 @@ import type {
   UpdateTaskInput,
 } from "../types";
 import type { TaskFilters } from "../components/TaskFilters";
-import { getApiBaseUrl } from "@/utils/api";
+import { baseApi } from "@/utils/api/baseQuery";
 
-const baseQuery = fetchBaseQuery({
-  baseUrl: getApiBaseUrl(""),
-  prepareHeaders: (headers) => {
-    return headers;
-  },
-});
-
-export const tasksApi = createApi({
-  reducerPath: "tasksApi",
-  baseQuery,
-  tagTypes: ["Tasks", "Statuses", "Priorities"],
+export const tasksApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getTasks: builder.query<{ tasks: Task[] }, TaskFilters | void>({
       query: (filters) => {
@@ -109,3 +98,4 @@ export const {
   useCreateStatusMutation,
   useCreatePriorityMutation,
 } = tasksApi;
+

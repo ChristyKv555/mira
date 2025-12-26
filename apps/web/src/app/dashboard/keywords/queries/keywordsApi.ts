@@ -1,71 +1,15 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { TaskStatus, TaskPriority } from "../../tasks/types";
-import { getApiBaseUrl } from "@/utils/api";
+import { baseApi } from "@/utils/api/baseQuery";
+import type {
+  PriorityMapping,
+  StatusMapping,
+  CreatePriorityMappingInput,
+  CreateStatusMappingInput,
+  UpdatePriorityMappingInput,
+  UpdateStatusMappingInput,
+} from "../types";
 
-export interface PriorityMapping {
-  id: string;
-  userId: string;
-  priorityId: string;
-  keywords: string[];
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface StatusMapping {
-  id: string;
-  userId: string;
-  statusId: string;
-  keywords: string[];
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreatePriorityMappingInput {
-  priorityId: string;
-  keywords?: string[];
-  isActive?: boolean;
-}
-
-export interface CreateStatusMappingInput {
-  statusId: string;
-  keywords?: string[];
-  isActive?: boolean;
-}
-
-export interface UpdatePriorityMappingInput {
-  id: string;
-  keywords?: string[];
-  isActive?: boolean;
-}
-
-export interface UpdateStatusMappingInput {
-  id: string;
-  keywords?: string[];
-  isActive?: boolean;
-}
-
-const baseQuery = fetchBaseQuery({
-  baseUrl: getApiBaseUrl(""),
-  prepareHeaders: (headers) => {
-    return headers;
-  },
-});
-
-export const keywordsApi = createApi({
-  reducerPath: "keywordsApi",
-  baseQuery,
-  tagTypes: ["Priorities", "Statuses", "PriorityMappings", "StatusMappings"],
+export const keywordsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getPriorities: builder.query<{ priorities: TaskPriority[] }, void>({
-      query: () => "/api/priorities",
-      providesTags: ["Priorities"],
-    }),
-    getStatuses: builder.query<{ statuses: TaskStatus[] }, void>({
-      query: () => "/api/statuses",
-      providesTags: ["Statuses"],
-    }),
     getPriorityMappings: builder.query<
       { mappings: PriorityMapping[] },
       { priorityId?: string } | void
@@ -156,8 +100,6 @@ export const keywordsApi = createApi({
 });
 
 export const {
-  useGetPrioritiesQuery,
-  useGetStatusesQuery,
   useGetPriorityMappingsQuery,
   useCreatePriorityMappingMutation,
   useUpdatePriorityMappingMutation,
@@ -167,3 +109,4 @@ export const {
   useUpdateStatusMappingMutation,
   useDeleteStatusMappingMutation,
 } = keywordsApi;
+

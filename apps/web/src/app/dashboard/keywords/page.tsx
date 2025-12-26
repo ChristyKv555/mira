@@ -5,7 +5,7 @@ import { useDispatch } from "react-redux";
 import {
   useGetPrioritiesQuery,
   useGetStatusesQuery,
-} from "./store/keywordsApi";
+} from "../tasks/queries/tasksApi";
 import {
   setPriorities,
   setStatuses,

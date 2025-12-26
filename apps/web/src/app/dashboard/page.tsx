@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { useGetTasksQuery } from "./tasks/store/tasksApi";
+import { useGetTasksQuery } from "./tasks/queries/tasksApi";
 import { setTasks } from "./tasks/store/tasksSlice";
 import { useAppSelector } from "@/store/hooks";
 import { HighAttentionTasks } from "./components/HighAttentionTasks";

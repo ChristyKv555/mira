@@ -4,11 +4,9 @@ import storage from "redux-persist/lib/storage";
 import { combineReducers } from "@reduxjs/toolkit";
 import authReducer from "./slices/authSlice";
 import integrationsReducer from "../app/dashboard/connect/store/integrationsSlice";
-import { integrationsApi } from "../app/dashboard/connect/store/integrationsApi";
 import tasksReducer from "../app/dashboard/tasks/store/tasksSlice";
-import { tasksApi } from "../app/dashboard/tasks/store/tasksApi";
 import keywordsReducer from "../app/dashboard/keywords/store/keywordsSlice";
-import { keywordsApi } from "../app/dashboard/keywords/store/keywordsApi";
+import { baseApi } from "../utils/api/baseQuery";
 
 // Redux persist configuration
 const persistConfig = {
@@ -23,9 +21,7 @@ const rootReducer = combineReducers({
   integrations: integrationsReducer,
   tasks: tasksReducer,
   keywords: keywordsReducer,
-  [integrationsApi.reducerPath]: integrationsApi.reducer,
-  [tasksApi.reducerPath]: tasksApi.reducer,
-  [keywordsApi.reducerPath]: keywordsApi.reducer,
+  [baseApi.reducerPath]: baseApi.reducer,
 });
 
 // Create persisted reducer
@@ -39,11 +35,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
       },
-    }).concat(
-      integrationsApi.middleware,
-      tasksApi.middleware,
-      keywordsApi.middleware
-    ),
+    }).concat(baseApi.middleware),
 });
 
 // Create persistor

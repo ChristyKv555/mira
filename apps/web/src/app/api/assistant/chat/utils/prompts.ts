@@ -1,10 +1,12 @@
-import type { Task } from "@/database/schema/tasks";
+import type { SimilarTaskWithContext } from "./vectorSearch";
 
 /**
  * Builds a system prompt that instructs the AI to use context when available
  * and provide generic responses when no relevant context is found
  */
-export function buildSystemPrompt(similarTasks: Task[]): string {
+export function buildSystemPrompt(
+  similarTasks: SimilarTaskWithContext[]
+): string {
   const hasContext = similarTasks.length > 0;
 
   if (!hasContext) {
@@ -25,10 +27,17 @@ Be friendly, concise, and helpful.`;
         `Task ${index + 1}:`,
         `Title: ${task.title}`,
         task.description ? `Description: ${task.description}` : null,
+        task.status ? `Status: ${task.status}` : null,
+        task.priority ? `Priority: ${task.priority}` : null,
         task.dueDate
           ? `Due Date: ${new Date(task.dueDate).toLocaleDateString()}`
           : null,
-        task.completedAt ? `Status: Completed` : `Status: In Progress`,
+        task.completedAt
+          ? `Completed At: ${new Date(task.completedAt).toLocaleDateString()}`
+          : null,
+        task.updatedAt
+          ? `Last Updated: ${new Date(task.updatedAt).toLocaleDateString()}`
+          : null,
       ]
         .filter(Boolean)
         .join("\n");
@@ -55,7 +64,7 @@ INSTRUCTIONS:
 /**
  * Formats tasks into a readable string for context
  */
-export function formatTasksForContext(tasks: Task[]): string {
+export function formatTasksForContext(tasks: SimilarTaskWithContext[]): string {
   if (tasks.length === 0) {
     return "No relevant tasks found.";
   }
@@ -65,10 +74,17 @@ export function formatTasksForContext(tasks: Task[]): string {
       const parts = [
         `Task ${index + 1}: ${task.title}`,
         task.description ? `  Description: ${task.description}` : null,
+        task.status ? `  Status: ${task.status}` : null,
+        task.priority ? `  Priority: ${task.priority}` : null,
         task.dueDate
           ? `  Due Date: ${new Date(task.dueDate).toLocaleDateString()}`
           : null,
-        task.completedAt ? `  Status: Completed` : `  Status: Active`,
+        task.completedAt
+          ? `  Completed At: ${new Date(task.completedAt).toLocaleDateString()}`
+          : null,
+        task.updatedAt
+          ? `  Last Updated: ${new Date(task.updatedAt).toLocaleDateString()}`
+          : null,
       ]
         .filter(Boolean)
         .join("\n");

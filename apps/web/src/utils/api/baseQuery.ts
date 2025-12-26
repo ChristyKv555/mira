@@ -26,6 +26,7 @@ export const baseApi = createApi({
     "PriorityMappings",
     "StatusMappings",
     "Integrations",
+    "ChatSessions",
   ],
   endpoints: () => ({}),
 });

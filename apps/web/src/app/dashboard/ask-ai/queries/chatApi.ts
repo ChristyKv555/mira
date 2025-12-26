@@ -1,4 +1,6 @@
 import { streamBaseApi } from "@/utils/api/baseQuery";
+import { baseApi } from "@/utils/api/baseQuery";
+import { ChatSession } from "../types/chat.types";
 
 export interface AssistantChatStreamParams {
   message: string;
@@ -35,4 +37,39 @@ export const assistantChatStreamApi = streamBaseApi.injectEndpoints({
   }),
 });
 
+export const chatApi = baseApi.injectEndpoints({
+  endpoints: (builder) => ({
+    getChatSessions: builder.query<{ sessions: ChatSession[] }, void>({
+      query: () => "/api/assistant/chat/sessions",
+      providesTags: ["ChatSessions"],
+    }),
+    getChatSession: builder.query<
+      {
+        session: ChatSession;
+        messages: Array<{
+          id: string;
+          role: "user" | "assistant";
+          content: string;
+          createdAt: string;
+        }>;
+      },
+      string
+    >({
+      query: (sessionId) => `/api/assistant/chat/sessions/${sessionId}`,
+    }),
+    deleteChatSession: builder.mutation<{ success: boolean }, string>({
+      query: (sessionId) => ({
+        url: `/api/assistant/chat/sessions/${sessionId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["ChatSessions"],
+    }),
+  }),
+});
+
 export const { useStreamAssistantChatMutation } = assistantChatStreamApi;
+export const {
+  useGetChatSessionsQuery,
+  useGetChatSessionQuery,
+  useDeleteChatSessionMutation,
+} = chatApi;

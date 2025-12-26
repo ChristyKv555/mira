@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { extractUserDataOrThrow } from "@/app/api/utils/extractor";
-import { generateEmbedding } from "@/lib/genai/embedding";
 import { makeAICall } from "@/lib/genai/model";
 import { z } from "zod";
 import {
@@ -10,7 +9,7 @@ import {
   saveAssistantMessage,
   updateSessionTimestamp,
 } from "../utils/sessionManagement";
-import { findSimilarTasks } from "../utils/vectorSearch";
+import { findSimilarTasksWithContext } from "../utils/vectorSearch";
 import { buildSystemPrompt } from "../utils/prompts";
 import {
   createMetadataSSEMessage,
@@ -65,35 +64,13 @@ export async function POST(request: NextRequest) {
             })
           );
 
-          // Step 1: Generate embedding for user query
-          console.log(
-            `[Chat Stream] Generating embedding for query: "${message}"`
-          );
-          const queryEmbedding = await generateEmbedding(message);
-          console.log(
-            `[Chat Stream] Embedding generated, dimensions: ${queryEmbedding.length}`
-          );
-
-          // Step 2: Perform vector similarity search on tasks
-          console.log(
-            `[Chat Stream] Searching for similar tasks for user: ${userData.userId}`
-          );
-          const similarTasks = await findSimilarTasks(
-            queryEmbedding,
+          // Step 1: Get all tasks for the user with joined data
+          const similarTasks = await findSimilarTasksWithContext(
             userData.userId
-          );
-          console.log(
-            `[Chat Stream] Found ${similarTasks.length} similar tasks`
           );
 
           // Step 3: Build system prompt with context
           const systemPrompt = buildSystemPrompt(similarTasks);
-          console.log(
-            `[Chat Stream] System prompt length: ${systemPrompt.length} characters`
-          );
-          console.log(
-            `[Chat Stream] System prompt preview: ${systemPrompt.substring(0, 200)}...`
-          );
 
           // Step 4: Get streaming AI response with context
           const aiResponse = await makeAICall({

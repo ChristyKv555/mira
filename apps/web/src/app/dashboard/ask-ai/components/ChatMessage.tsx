@@ -42,7 +42,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
       {!isUser && (
-        <div className="flex items-center justify-center rounded-full bg-primary p-2 mr-2 mt-1 h-8 w-8 flex-shrink-0">
+        <div className="flex items-center justify-center rounded-full bg-primary p-2 mr-2 mt-1 h-8 w-8 shrink-0">
           <Sparkles className="w-4 h-4 text-primary-foreground" />
         </div>
       )}
@@ -79,7 +79,7 @@ function renderContent(
     return (
       <div className="flex flex-col gap-3">
         {parsed.content && (
-          <p className="text-sm whitespace-pre-wrap break-words text-muted-foreground">
+          <p className="text-sm whitespace-pre-wrap wrap-break-word text-muted-foreground">
             {parsed.content}
           </p>
         )}
@@ -121,7 +121,7 @@ function renderContent(
 
   return (
     <p
-      className={`text-sm whitespace-pre-wrap break-words ${
+      className={`text-sm whitespace-pre-wrap wrap-break-word ${
         isUser ? "text-foreground" : "text-foreground"
       }`}
     >

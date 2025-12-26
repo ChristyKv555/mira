@@ -1,13 +1,23 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  startTransition,
+} from "react";
 import { History, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useStreamAssistantChatMutation } from "../queries/chatApi";
+import {
+  useStreamAssistantChatMutation,
+  useGetChatSessionQuery,
+} from "../queries/chatApi";
 import { ChatInput } from "./ChatInput";
 import { ChatMessage } from "./ChatMessage";
 import { ChatLoading } from "./ChatLoading";
 import { ChatWelcome } from "./ChatWelcome";
+import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { Message, MessageType } from "../types/chat.types";
 
@@ -27,9 +37,19 @@ export function ChatBot() {
   const [streamContent, setStreamContent] = useState("");
   const [mode, setMode] = useState<"ask" | "generate">("ask");
   const [inputValue, setInputValue] = useState("");
+  const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
+
+  // Load session when selectedSessionId changes
+  const { data: sessionData } = useGetChatSessionQuery(
+    selectedSessionId || "",
+    {
+      skip: !selectedSessionId,
+    }
+  );
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const loadedSessionIdRef = useRef<string | undefined>(undefined);
 
   // Scroll to bottom when messages change
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
@@ -39,6 +59,42 @@ export function ChatBot() {
   useEffect(() => {
     scrollToBottom("smooth");
   }, [messages, streamContent, scrollToBottom]);
+
+  // Load session messages when session data is fetched
+  useEffect(() => {
+    if (
+      selectedSessionId &&
+      sessionData?.session &&
+      sessionData?.messages &&
+      loadedSessionIdRef.current !== selectedSessionId
+    ) {
+      loadedSessionIdRef.current = selectedSessionId;
+
+      // Use startTransition to batch state updates and avoid cascading renders
+      startTransition(() => {
+        setSelectedSessionTitle(sessionData.session.title);
+        setMode(sessionData.session.type);
+
+        // Convert API messages to Message format
+        const loadedMessages: Message[] = sessionData.messages.map((msg) => ({
+          id: msg.id,
+          content: msg.content,
+          isUser: msg.role === "user",
+          timestamp: new Date(msg.createdAt),
+          type: MessageType.TEXT,
+        }));
+
+        setMessages(loadedMessages);
+      });
+    }
+  }, [sessionData, selectedSessionId]);
+
+  // Reset loaded session ref when selectedSessionId changes to undefined
+  useEffect(() => {
+    if (!selectedSessionId) {
+      loadedSessionIdRef.current = undefined;
+    }
+  }, [selectedSessionId]);
 
   const handleSendMessage = (message: string) => {
     if (!message.trim()) return;
@@ -173,7 +229,22 @@ export function ChatBot() {
   };
 
   const handleHistoryClick = () => {
-    // TODO: Implement history sidebar
+    setIsHistorySidebarOpen(true);
+  };
+
+  const handleSelectSession = (sessionId: string) => {
+    cancelChatRequest();
+    if (sessionId) {
+      setSelectedSessionId(sessionId);
+    } else {
+      // Clear selection - new chat
+      setSelectedSessionId(undefined);
+      setSelectedSessionTitle("");
+      setMessages([]);
+      setStreamContent("");
+      setInputValue("");
+      setMode("ask");
+    }
   };
 
   const hasMessages = messages.length > 0;
@@ -267,6 +338,14 @@ export function ChatBot() {
         onSend={handleSendMessage}
         onCancel={cancelChatRequest}
         isLoading={isChatProcessing}
+      />
+
+      {/* History Sidebar */}
+      <ChatHistorySidebar
+        isOpen={isHistorySidebarOpen}
+        onClose={() => setIsHistorySidebarOpen(false)}
+        onSelectSession={handleSelectSession}
+        selectedSessionId={selectedSessionId}
       />
     </div>
   );

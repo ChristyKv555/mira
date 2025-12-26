@@ -55,6 +55,8 @@ export const insertTaskSchema = createInsertSchema(tasks, {
     .optional()
     .nullable()
     .transform((val) => {
+      // Preserve undefined for partial updates - don't transform undefined to null
+      if (val === undefined) return undefined;
       if (!val || val === "") return null;
       if (val instanceof Date) return val;
       if (typeof val === "string") {
@@ -68,6 +70,8 @@ export const insertTaskSchema = createInsertSchema(tasks, {
     .optional()
     .nullable()
     .transform((val) => {
+      // Preserve undefined for partial updates - don't transform undefined to null
+      if (val === undefined) return undefined;
       if (!val || val === "") return null;
       if (val instanceof Date) return val;
       if (typeof val === "string") {

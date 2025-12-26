@@ -46,7 +46,7 @@ Be friendly, concise, and helpful.`;
     })
     .join("\n\n");
 
-  return `You are a helpful AI assistant for a task management application. 
+  return `You are a helpful AI assistant for a task management application.
 The user is asking a question, and I've found ${similarTasks.length} relevant task(s) from their database that might help answer their query.
 
 RELEVANT TASKS FROM USER'S DATABASE:

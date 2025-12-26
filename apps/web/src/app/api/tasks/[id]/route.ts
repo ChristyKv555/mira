@@ -36,14 +36,27 @@ export async function PATCH(
       );
     }
 
-    // Validate input using Zod schema (omit id and userId as they come from params/userData)
-    const validatedData = updateTaskSchema
-      .omit({ id: true, userId: true })
-      .parse(body);
-
     const currentTask = existingTask[0];
 
-    // Prepare update data (validatedData already excludes id and userId)
+    // This prevents overwriting existing values when fields are omitted
+    const fieldsToUpdate: Record<string, unknown> = {};
+
+    if ("title" in body) fieldsToUpdate.title = body.title;
+    if ("description" in body) fieldsToUpdate.description = body.description;
+    if ("statusId" in body) fieldsToUpdate.statusId = body.statusId;
+    if ("priorityId" in body) fieldsToUpdate.priorityId = body.priorityId;
+    if ("dueDate" in body) fieldsToUpdate.dueDate = body.dueDate;
+    if ("completedAt" in body) fieldsToUpdate.completedAt = body.completedAt;
+    if ("sourceEventId" in body)
+      fieldsToUpdate.sourceEventId = body.sourceEventId;
+
+    // Validate only the fields that are being updated
+    // updateTaskSchema already has .partial() applied, so we just need to omit id and userId
+    const validatedData = updateTaskSchema
+      .omit({ id: true, userId: true })
+      .parse(fieldsToUpdate);
+
+    // Prepare update data
     const updateData: Record<string, unknown> = {
       ...validatedData,
       updatedAt: new Date(),

@@ -1,10 +1,23 @@
 import { NextRequest } from "next/server";
-import { db } from "@/database";
-import { chatSessions, chatMessages } from "@/database/schema";
-import { eq, asc, and } from "drizzle-orm";
 import { extractUserDataOrThrow } from "@/app/api/utils/extractor";
+import { generateEmbedding } from "@/lib/genai/embedding";
 import { makeAICall } from "@/lib/genai/model";
 import { z } from "zod";
+import {
+  getOrCreateSession,
+  getConversationHistory,
+  saveUserMessage,
+  saveAssistantMessage,
+  updateSessionTimestamp,
+} from "../utils/sessionManagement";
+import { findSimilarTasks } from "../utils/vectorSearch";
+import { buildSystemPrompt } from "../utils/prompts";
+import {
+  createMetadataSSEMessage,
+  createTextSSEMessage,
+  createCompletionSSEMessage,
+  streamFriendlyError,
+} from "../utils/streamHelpers";
 
 const sendMessageSchema = z.object({
   message: z.string().min(1, "Message is required"),
@@ -21,98 +34,54 @@ export async function POST(request: NextRequest) {
     const { message, sessionId, type } = validatedData;
 
     // Get or create chat session
-    let session;
-    if (sessionId) {
-      // Use existing session
-      const existingSession = await db
-        .select()
-        .from(chatSessions)
-        .where(
-          and(
-            eq(chatSessions.id, sessionId),
-            eq(chatSessions.userId, userData.userId)
-          )
-        )
-        .limit(1);
-
-      if (existingSession.length === 0) {
-        return new Response(
-          JSON.stringify({ error: "Chat session not found or unauthorized" }),
-          {
-            status: 404,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-      }
-      session = existingSession[0];
-    } else {
-      // Create new session
-      if (!type) {
-        return new Response(
-          JSON.stringify({ error: "Type is required when creating a new session" }),
-          {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-      }
-
-      const [newSession] = await db
-        .insert(chatSessions)
-        .values({
-          userId: userData.userId,
-          type: type,
-          title: message.substring(0, 50),
-        })
-        .returning();
-
-      session = newSession;
-    }
+    const session = await getOrCreateSession(
+      userData.userId,
+      sessionId,
+      type,
+      message
+    );
 
     // Get conversation history for context
-    const previousMessages = await db
-      .select()
-      .from(chatMessages)
-      .where(eq(chatMessages.chatSessionId, session.id))
-      .orderBy(asc(chatMessages.createdAt));
-
-    // Build conversation history for AI
-    const conversationHistory = previousMessages.map((msg) => ({
-      role: msg.role as "user" | "assistant",
-      content: msg.content,
-    }));
+    const conversationHistory = await getConversationHistory(session.id);
 
     // Save user message
-    const [userMessage] = await db
-      .insert(chatMessages)
-      .values({
-        chatSessionId: session.id,
-        userId: userData.userId,
-        role: "user",
-        content: message,
-      })
-      .returning();
+    const userMessage = await saveUserMessage(
+      session.id,
+      userData.userId,
+      message
+    );
 
     // Create a ReadableStream for SSE
-    const encoder = new TextEncoder();
     let accumulatedContent = "";
 
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // Send initial metadata as JSON
-          const metadata = {
-            sessionId: session.id,
-            userMessageId: userMessage.id,
-          };
+          // Send initial metadata
           controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ type: "metadata", data: metadata })}\n\n`)
+            createMetadataSSEMessage({
+              sessionId: session.id,
+              userMessageId: userMessage.id,
+            })
           );
 
-          // Get streaming AI response
+          // Step 1: Generate embedding for user query
+          const queryEmbedding = await generateEmbedding(message);
+
+          // Step 2: Perform vector similarity search on tasks
+          const similarTasks = await findSimilarTasks(
+            queryEmbedding,
+            userData.userId
+          );
+
+          // Step 3: Build system prompt with context
+          const systemPrompt = buildSystemPrompt(similarTasks);
+
+          // Step 4: Get streaming AI response with context
           const aiResponse = await makeAICall({
             prompt: message,
             conversationHistory: conversationHistory,
+            systemMessage: systemPrompt,
             stream: true,
             modelParams: {
               model: "gemini-2.5-flash",
@@ -122,43 +91,34 @@ export async function POST(request: NextRequest) {
           });
 
           // Check if it's a stream
-          if (aiResponse && typeof aiResponse === "object" && Symbol.asyncIterator in aiResponse) {
+          if (
+            aiResponse &&
+            typeof aiResponse === "object" &&
+            Symbol.asyncIterator in aiResponse
+          ) {
             // Stream the response chunks as plain text (SSE format)
             for await (const chunk of aiResponse) {
               accumulatedContent += chunk;
               // Send each chunk as plain text in SSE format
-              // The fetchEventSource will receive this in event.data
-              controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+              controller.enqueue(createTextSSEMessage(chunk));
             }
 
             // Save complete AI response to database
-            const [assistantMessage] = await db
-              .insert(chatMessages)
-              .values({
-                chatSessionId: session.id,
-                userId: userData.userId,
-                role: "assistant",
-                content: accumulatedContent,
-              })
-              .returning();
+            const assistantMessage = await saveAssistantMessage(
+              session.id,
+              userData.userId,
+              accumulatedContent
+            );
 
             // Update session updatedAt
-            await db
-              .update(chatSessions)
-              .set({ updatedAt: new Date() })
-              .where(eq(chatSessions.id, session.id));
+            await updateSessionTimestamp(session.id);
 
-            // Send completion event as JSON
+            // Send completion event
             controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({
-                  type: "complete",
-                  data: {
-                    assistantMessageId: assistantMessage.id,
-                    content: accumulatedContent,
-                  },
-                })}\n\n`
-              )
+              createCompletionSSEMessage({
+                assistantMessageId: assistantMessage.id,
+                content: accumulatedContent,
+              })
             );
           } else {
             throw new Error("Expected streaming response but got non-stream");
@@ -167,15 +127,8 @@ export async function POST(request: NextRequest) {
           // Close the stream
           controller.close();
         } catch (error) {
-          console.error("Error in streaming chat:", error);
-          const errorMessage =
-            error instanceof Error ? error.message : "Failed to stream chat response";
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ type: "error", error: errorMessage })}\n\n`
-            )
-          );
-          controller.close();
+          // Use friendly error utility to send user-friendly message
+          streamFriendlyError(controller, error);
         }
       },
     });
@@ -185,7 +138,7 @@ export async function POST(request: NextRequest) {
       headers: {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
+        Connection: "keep-alive",
         "X-Accel-Buffering": "no", // Disable buffering for nginx
       },
     });
@@ -200,6 +153,15 @@ export async function POST(request: NextRequest) {
         }
       );
     }
+
+    // Handle session management errors
+    if (error instanceof Error && error.message.includes("session")) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: error.message.includes("not found") ? 404 : 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(
       JSON.stringify({ error: "Failed to process chat message" }),
       {
@@ -209,4 +171,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

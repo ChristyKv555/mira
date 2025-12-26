@@ -44,6 +44,7 @@ export function ChatBot() {
     selectedSessionId || "",
     {
       skip: !selectedSessionId,
+      refetchOnMountOrArgChange: true, // Ensure refetch when sessionId changes
     }
   );
 
@@ -62,39 +63,46 @@ export function ChatBot() {
 
   // Load session messages when session data is fetched
   useEffect(() => {
-    if (
-      selectedSessionId &&
-      sessionData?.session &&
-      sessionData?.messages &&
-      loadedSessionIdRef.current !== selectedSessionId
-    ) {
-      loadedSessionIdRef.current = selectedSessionId;
+    // Only process if we have a selected session and session data
+    if (!selectedSessionId || !sessionData?.session) {
+      return;
+    }
 
-      // Use startTransition to batch state updates and avoid cascading renders
-      startTransition(() => {
-        setSelectedSessionTitle(sessionData.session.title);
-        setMode(sessionData.session.type);
+    // Ensure the session data matches the selected session ID
+    if (sessionData.session.id !== selectedSessionId) {
+      return;
+    }
 
-        // Convert API messages to Message format
-        const loadedMessages: Message[] = sessionData.messages.map((msg) => ({
+    // Skip if this session is already loaded
+    if (loadedSessionIdRef.current === selectedSessionId) {
+      return;
+    }
+
+    // Mark this session as loaded BEFORE processing to prevent duplicate loads
+    loadedSessionIdRef.current = selectedSessionId;
+
+    // Use startTransition to batch state updates and avoid cascading renders
+    startTransition(() => {
+      // Update session metadata
+      setSelectedSessionTitle(sessionData.session.title);
+      setMode(sessionData.session.type);
+
+      // Convert API messages to Message format (handle empty array case)
+      const loadedMessages: Message[] = (sessionData.messages || []).map(
+        (msg) => ({
           id: msg.id,
           content: msg.content,
           isUser: msg.role === "user",
           timestamp: new Date(msg.createdAt),
           type: MessageType.TEXT,
-        }));
+        })
+      );
 
-        setMessages(loadedMessages);
-      });
-    }
+      // Clear stream content and set messages
+      setStreamContent("");
+      setMessages(loadedMessages);
+    });
   }, [sessionData, selectedSessionId]);
-
-  // Reset loaded session ref when selectedSessionId changes to undefined
-  useEffect(() => {
-    if (!selectedSessionId) {
-      loadedSessionIdRef.current = undefined;
-    }
-  }, [selectedSessionId]);
 
   const handleSendMessage = (message: string) => {
     if (!message.trim()) return;
@@ -235,6 +243,12 @@ export function ChatBot() {
   const handleSelectSession = (sessionId: string) => {
     cancelChatRequest();
     if (sessionId) {
+      // Clear messages immediately when switching to a new session
+      setMessages([]);
+      setStreamContent("");
+      // Reset the loaded ref to allow reloading
+      loadedSessionIdRef.current = undefined;
+      // Set the new session ID (this will trigger the query)
       setSelectedSessionId(sessionId);
     } else {
       // Clear selection - new chat
@@ -244,6 +258,7 @@ export function ChatBot() {
       setStreamContent("");
       setInputValue("");
       setMode("ask");
+      loadedSessionIdRef.current = undefined;
     }
   };
 

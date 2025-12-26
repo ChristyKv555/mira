@@ -43,15 +43,6 @@ export async function PATCH(
 
     const currentTask = existingTask[0];
 
-    // Check if title or description changed
-    const titleChanged =
-      validatedData.title !== undefined &&
-      validatedData.title !== currentTask.title;
-    const descriptionChanged =
-      validatedData.description !== undefined &&
-      validatedData.description !== currentTask.description;
-    const shouldRegenerateEmbedding = titleChanged || descriptionChanged;
-
     // Prepare update data (validatedData already excludes id and userId)
     const updateData: Record<string, unknown> = {
       ...validatedData,
@@ -59,17 +50,50 @@ export async function PATCH(
     };
 
     // Generate and include embedding only if title or description changed
-    if (shouldRegenerateEmbedding) {
-      const newTitle = validatedData.title ?? currentTask.title;
-      const newDescription =
-        validatedData.description ?? currentTask.description;
-      const taskContent = createTaskContentForEmbedding(
-        newTitle,
-        newDescription
-      );
-      const embedding = await generateEmbedding(taskContent);
-      updateData.embedding = embedding;
+    const newTitle = validatedData.title ?? currentTask.title;
+    const newDescription = validatedData.description ?? currentTask.description;
+
+    // Fetch status and priority for embedding
+    let status = null;
+    let priority = null;
+    const statusId = validatedData.statusId ?? currentTask.statusId;
+    const priorityId = validatedData.priorityId ?? currentTask.priorityId;
+
+    if (statusId) {
+      const statusResult = await db
+        .select()
+        .from(taskStatuses)
+        .where(eq(taskStatuses.id, statusId))
+        .limit(1);
+      if (statusResult.length > 0) {
+        status = { label: statusResult[0].label };
+      }
     }
+
+    if (priorityId) {
+      const priorityResult = await db
+        .select()
+        .from(taskPriorities)
+        .where(eq(taskPriorities.id, priorityId))
+        .limit(1);
+      if (priorityResult.length > 0) {
+        priority = { label: priorityResult[0].label };
+      }
+    }
+
+    const taskContent = createTaskContentForEmbedding({
+      title: newTitle,
+      description: newDescription,
+      status,
+      priority,
+      dueDate: validatedData.dueDate ?? currentTask.dueDate,
+      completedAt: validatedData.completedAt ?? currentTask.completedAt,
+      createdAt: currentTask.createdAt,
+      updatedAt: new Date(),
+      sourcePlatform: currentTask.sourcePlatform || null,
+    });
+    const embedding = await generateEmbedding(taskContent);
+    updateData.embedding = embedding;
 
     // Update task
     await db

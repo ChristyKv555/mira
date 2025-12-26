@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
 
     // If no statusId provided, get the first status (lowest order)
     let statusId = validatedData.statusId;
+    let status = null;
     if (!statusId) {
       const firstStatus = await db
         .select()
@@ -34,19 +35,46 @@ export async function POST(request: NextRequest) {
 
       if (firstStatus.length > 0) {
         statusId = firstStatus[0].id;
+        status = { label: firstStatus[0].label };
       } else {
         return NextResponse.json(
           { error: "No status columns found. Please create a status first." },
           { status: 400 }
         );
       }
+    } else {
+      // Fetch status label for embedding
+      const statusResult = await db
+        .select()
+        .from(taskStatuses)
+        .where(eq(taskStatuses.id, statusId))
+        .limit(1);
+      if (statusResult.length > 0) {
+        status = { label: statusResult[0].label };
+      }
+    }
+
+    // Fetch priority label if priorityId is provided
+    let priority = null;
+    if (validatedData.priorityId) {
+      const priorityResult = await db
+        .select()
+        .from(taskPriorities)
+        .where(eq(taskPriorities.id, validatedData.priorityId))
+        .limit(1);
+      if (priorityResult.length > 0) {
+        priority = { label: priorityResult[0].label };
+      }
     }
 
     // Generate embedding for task content
-    const taskContent = createTaskContentForEmbedding(
-      validatedData.title,
-      validatedData.description || null
-    );
+    const taskContent = createTaskContentForEmbedding({
+      title: validatedData.title,
+      description: validatedData.description || null,
+      status,
+      priority,
+      dueDate: validatedData.dueDate || null,
+    });
     const embedding = await generateEmbedding(taskContent);
 
     // Insert task with embedding

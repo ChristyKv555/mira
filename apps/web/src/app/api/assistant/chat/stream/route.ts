@@ -17,6 +17,7 @@ import {
   createCompletionSSEMessage,
   streamFriendlyError,
 } from "../utils/streamHelpers";
+import { generateEmbedding } from "@/lib/genai";
 
 const sendMessageSchema = z.object({
   message: z.string().min(1, "Message is required"),
@@ -64,9 +65,12 @@ export async function POST(request: NextRequest) {
             })
           );
 
+          const queryEmbedding = await generateEmbedding(message);
+
           // Step 1: Get all tasks for the user with joined data
           const similarTasks = await findSimilarTasksWithContext(
-            userData.userId
+            userData.userId,
+            queryEmbedding
           );
 
           // Step 3: Build system prompt with context

@@ -6,7 +6,7 @@ import authReducer from "./slices/authSlice";
 import integrationsReducer from "../app/dashboard/connect/store/integrationsSlice";
 import tasksReducer from "../app/dashboard/tasks/store/tasksSlice";
 import keywordsReducer from "../app/dashboard/keywords/store/keywordsSlice";
-import { baseApi } from "../utils/api/baseQuery";
+import { baseApi, streamBaseApi } from "../utils/api/baseQuery";
 
 // Redux persist configuration
 const persistConfig = {
@@ -22,6 +22,7 @@ const rootReducer = combineReducers({
   tasks: tasksReducer,
   keywords: keywordsReducer,
   [baseApi.reducerPath]: baseApi.reducer,
+  [streamBaseApi.reducerPath]: streamBaseApi.reducer,
 });
 
 // Create persisted reducer
@@ -34,8 +35,9 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
+        ignoredPaths: ["streamApi"],
       },
-    }).concat(baseApi.middleware),
+    }).concat(baseApi.middleware, streamBaseApi.middleware),
 });
 
 // Create persistor

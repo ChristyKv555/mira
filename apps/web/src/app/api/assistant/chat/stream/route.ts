@@ -66,16 +66,34 @@ export async function POST(request: NextRequest) {
           );
 
           // Step 1: Generate embedding for user query
+          console.log(
+            `[Chat Stream] Generating embedding for query: "${message}"`
+          );
           const queryEmbedding = await generateEmbedding(message);
+          console.log(
+            `[Chat Stream] Embedding generated, dimensions: ${queryEmbedding.length}`
+          );
 
           // Step 2: Perform vector similarity search on tasks
+          console.log(
+            `[Chat Stream] Searching for similar tasks for user: ${userData.userId}`
+          );
           const similarTasks = await findSimilarTasks(
             queryEmbedding,
             userData.userId
           );
+          console.log(
+            `[Chat Stream] Found ${similarTasks.length} similar tasks`
+          );
 
           // Step 3: Build system prompt with context
           const systemPrompt = buildSystemPrompt(similarTasks);
+          console.log(
+            `[Chat Stream] System prompt length: ${systemPrompt.length} characters`
+          );
+          console.log(
+            `[Chat Stream] System prompt preview: ${systemPrompt.substring(0, 200)}...`
+          );
 
           // Step 4: Get streaming AI response with context
           const aiResponse = await makeAICall({

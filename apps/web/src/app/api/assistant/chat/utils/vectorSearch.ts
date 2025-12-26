@@ -1,32 +1,13 @@
-import { db } from "@/database";
-import { sql } from "drizzle-orm";
+import { db, tasks } from "@/database";
 import type { Task } from "@/database/schema/tasks";
+import { cosineDistance, sql, gt, desc, and, isNotNull, eq } from "drizzle-orm";
 
-const SIMILARITY_THRESHOLD = 0.7; // Cosine similarity threshold (0-1, higher = more similar)
+const SIMILARITY_THRESHOLD = 0.3; // Cosine similarity threshold (0-1, higher = more similar)
 const MAX_RESULTS = 10; // Maximum number of similar tasks to return
 
-// Type for raw database row result from SQL query
-interface RawTaskRow {
-  id: string;
-  user_id: string;
-  source_platform: string | null;
-  source_external_id: string | null;
-  source_event_id: string | null;
-  status_id: string | null;
-  priority_id: string | null;
-  title: string;
-  description: string | null;
-  embedding: number[] | null;
-  due_date: Date | null;
-  completed_at: Date | null;
-  created_at: Date;
-  updated_at: Date;
-  similarity: string | number;
-}
-
 /**
- * Performs vector similarity search on tasks using cosine distance
- * @param queryEmbedding - The embedding vector of the user query
+ * Performs vector similarity search on tasks using Drizzle ORM's cosineDistance function
+ * @param queryEmbedding - The embedding vector of the user query (must be 1536 dimensions)
  * @param userId - The user ID to filter tasks
  * @returns Array of similar tasks with their similarity scores
  */
@@ -39,64 +20,90 @@ export async function findSimilarTasks(
   }
 
   try {
-    // Use pgvector's cosine distance function
-    // 1 - cosine_distance gives us cosine similarity (0-1, higher is more similar)
-    // Format embedding as PostgreSQL array string for vector casting
-    const embeddingArray = `[${queryEmbedding.join(",")}]`;
+    // Calculate similarity: 1 - cosineDistance gives us cosine similarity (0-1, higher is more similar)
+    // Using Drizzle's cosineDistance function with sql template for the calculation
+    const similarity = sql<number>`1 - (${cosineDistance(tasks.embedding, queryEmbedding)})`;
 
-    // Use raw SQL for pgvector operations
-    // Note: Using sql.raw for the vector array as drizzle doesn't support vector type directly
-    const result = await db.execute(
-      sql.raw(`
-        SELECT
-          id,
-          user_id,
-          source_platform,
-          source_external_id,
-          source_event_id,
-          status_id,
-          priority_id,
-          title,
-          description,
-          embedding,
-          due_date,
-          completed_at,
-          created_at,
-          updated_at,
-          1 - (embedding <=> ${embeddingArray}::vector) as similarity
-        FROM tasks
-        WHERE user_id = '${userId}'
-          AND embedding IS NOT NULL
-          AND 1 - (embedding <=> ${embeddingArray}::vector) >= ${SIMILARITY_THRESHOLD}
-        ORDER BY embedding <=> ${embeddingArray}::vector
-        LIMIT ${MAX_RESULTS}
-      `)
+    // Log for debugging
+    console.log(
+      `[Vector Search] Query: Searching for tasks similar to user query`
+    );
+    console.log(`[Vector Search] User ID: ${userId}`);
+    console.log(
+      `[Vector Search] Similarity threshold: ${SIMILARITY_THRESHOLD}`
     );
 
-    // Map results to Task type
-    const rows = result as unknown as RawTaskRow[];
-    return rows.map((row) => ({
-      id: row.id,
-      userId: row.user_id,
-      sourcePlatform: row.source_platform,
-      sourceExternalId: row.source_external_id,
-      sourceEventId: row.source_event_id,
-      statusId: row.status_id,
-      priorityId: row.priority_id,
-      title: row.title,
-      description: row.description,
-      embedding: row.embedding,
-      dueDate: row.due_date,
-      completedAt: row.completed_at,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      similarity:
-        typeof row.similarity === "string"
-          ? parseFloat(row.similarity)
-          : row.similarity,
+    // Perform vector similarity search using Drizzle ORM
+    const results = await db
+      .select({
+        id: tasks.id,
+        userId: tasks.userId,
+        sourcePlatform: tasks.sourcePlatform,
+        sourceExternalId: tasks.sourceExternalId,
+        sourceEventId: tasks.sourceEventId,
+        statusId: tasks.statusId,
+        priorityId: tasks.priorityId,
+        title: tasks.title,
+        description: tasks.description,
+        embedding: tasks.embedding,
+        dueDate: tasks.dueDate,
+        completedAt: tasks.completedAt,
+        createdAt: tasks.createdAt,
+        updatedAt: tasks.updatedAt,
+        similarity,
+      })
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.userId, userId),
+          isNotNull(tasks.embedding),
+          gt(similarity, SIMILARITY_THRESHOLD)
+        )
+      )
+      .orderBy(desc(similarity))
+      .limit(MAX_RESULTS);
+
+    console.log(`[Vector Search] Found ${results.length} similar tasks`);
+
+    if (results.length === 0) {
+      console.log(
+        `[Vector Search] No tasks found above similarity threshold ${SIMILARITY_THRESHOLD}`
+      );
+      // Check if user has any tasks with embeddings at all
+      const allTasksCheck = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(tasks)
+        .where(and(eq(tasks.userId, userId), isNotNull(tasks.embedding)));
+
+      const taskCount = Number(allTasksCheck[0]?.count || 0);
+      console.log(
+        `[Vector Search] Total tasks with embeddings for user: ${taskCount}`
+      );
+      return [];
+    }
+
+    // Log similarity scores for debugging
+    results.forEach((task) => {
+      const simScore = Number(task.similarity);
+      console.log(
+        `[Vector Search] Task "${task.title}" - Similarity: ${simScore.toFixed(3)}`
+      );
+    });
+
+    console.log(`[Vector Search] Returning ${results.length} tasks`);
+
+    // Map results to ensure similarity is a number
+    return results.map((task) => ({
+      ...task,
+      similarity: Number(task.similarity),
     })) as Array<Task & { similarity: number }>;
   } catch (error) {
-    console.error("Error in vector similarity search:", error);
+    console.error("[Vector Search] Error in vector similarity search:", error);
+    // Log more details about the error
+    if (error instanceof Error) {
+      console.error("[Vector Search] Error message:", error.message);
+      console.error("[Vector Search] Error stack:", error.stack);
+    }
     return [];
   }
 }

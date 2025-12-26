@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { History, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useStreamAssistantChatMutation } from "../queries/chatApi";
-import { ChatHeader } from "./ChatHeader";
 import { ChatInput } from "./ChatInput";
 import { ChatMessage } from "./ChatMessage";
 import { ChatLoading } from "./ChatLoading";
@@ -171,17 +172,36 @@ export function ChatBot() {
     setMode("ask");
   };
 
-  const handleClose = () => {
-    cancelChatRequest();
-    // Could add logic to close/minimize chat if needed
+  const handleHistoryClick = () => {
+    // TODO: Implement history sidebar
   };
 
   const hasMessages = messages.length > 0;
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Mode Toggle */}
-      <div className="w-full flex justify-center pt-4 pb-2 px-4 border-b border-border">
+      {/* Mode Toggle with New Chat and History */}
+      <div className="w-full flex items-center justify-between pt-4 pb-2 px-4 border-b border-border gap-4">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleNewChat}
+            className="h-8 gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            New Chat
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleHistoryClick}
+            className="h-8 gap-2"
+          >
+            <History className="h-4 w-4" />
+            History
+          </Button>
+        </div>
         <div className="relative inline-flex items-center bg-muted rounded-full p-1">
           <button
             onClick={() => {
@@ -215,16 +235,6 @@ export function ChatBot() {
           </button>
         </div>
       </div>
-
-      {/* Chat Header */}
-      <ChatHeader
-        onClose={handleClose}
-        onHistoryClick={() => {
-          // TODO: Implement history sidebar
-        }}
-        onNewChatClick={handleNewChat}
-        selectedChatTitle={selectedSessionTitle}
-      />
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">

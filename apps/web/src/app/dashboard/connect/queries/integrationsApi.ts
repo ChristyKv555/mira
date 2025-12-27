@@ -29,6 +29,20 @@ export const integrationsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Integrations"],
     }),
+    getConnectSession: builder.mutation<
+      {
+        sessionToken: string;
+        connectLink: string;
+        expiresAt: string;
+      },
+      { platform: string }
+    >({
+      query: (body) => ({
+        url: "/api/integrations/connect/session",
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 
@@ -36,5 +50,6 @@ export const {
   useGetIntegrationsQuery,
   useConnectIntegrationMutation,
   useDisconnectIntegrationMutation,
+  useGetConnectSessionMutation,
 } = integrationsApi;
 

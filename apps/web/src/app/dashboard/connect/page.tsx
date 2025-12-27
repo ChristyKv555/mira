@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Nango from "@nangohq/frontend";
 import {
   useGetIntegrationsQuery,
-  useConnectIntegrationMutation,
+  useGetConnectSessionMutation,
 } from "./queries/integrationsApi";
 import { ConnectHeader } from "./components/ConnectHeader";
 import { IntegrationsGrid } from "./components/IntegrationsGrid";
@@ -11,21 +12,45 @@ import { ConnectionsList } from "./components/ConnectionsList";
 import { LoadingSpinner } from "./components/LoadingSpinner";
 import { INTEGRATIONS } from "./constants";
 
+// Initialize Nango frontend SDK (uses defaults if env vars not set)
+const nango = new Nango();
+
 export default function ConnectPage() {
   const [connectingId, setConnectingId] = useState<string | null>(null);
-  const { data, isLoading, error } = useGetIntegrationsQuery();
-  const [connectIntegration] = useConnectIntegrationMutation();
+  const { data, isLoading, error, refetch } = useGetIntegrationsQuery();
+  const [getConnectSession] = useGetConnectSessionMutation();
 
   const userIntegrations = data?.integrations || [];
 
   const handleConnect = async (integrationId: string) => {
     try {
       setConnectingId(integrationId);
-      await connectIntegration({ platform: integrationId }).unwrap();
+
+      // Get session token from backend
+      const sessionResponse = await getConnectSession({
+        platform: integrationId,
+      }).unwrap();
+
+      // Open Nango Connect UI
+      const connectUI = nango.openConnectUI({
+        sessionToken: sessionResponse.sessionToken,
+        onEvent: (event) => {
+          if (event.type === "close") {
+            // User closed the modal
+            setConnectingId(null);
+          } else if (event.type === "connect") {
+            // Connection successful - webhook will handle saving to DB
+            // Refresh integrations list after a short delay to allow webhook to process
+            setTimeout(() => {
+              refetch();
+              setConnectingId(null);
+            }, 1000);
+          }
+        },
+      });
     } catch (error) {
       console.error("Error connecting integration:", error);
       alert("Failed to connect integration. Please try again.");
-    } finally {
       setConnectingId(null);
     }
   };

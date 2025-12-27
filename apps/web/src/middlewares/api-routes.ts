@@ -7,9 +7,7 @@ import { isApiRoute } from "./route-types";
  * Add routes here to make them publicly accessible
  */
 export const PUBLIC_API_ROUTES = [
-  // Add public API routes here, e.g.:
-  // "/api/health",
-  // "/api/public/webhook",
+  "/api/integrations/webhook", // Nango webhook endpoint (signature verified internally)
 ] as const;
 
 /**

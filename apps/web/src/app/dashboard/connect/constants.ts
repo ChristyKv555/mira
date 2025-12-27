@@ -24,3 +24,43 @@ export const INTEGRATIONS: IntegrationConfig[] = [
     color: "bg-red-500",
   },
 ];
+
+/**
+ * Maps Nango integration IDs to platform values used in the database
+ */
+export function mapNangoIntegrationIdToPlatform(
+  nangoIntegrationId: string
+): "slack" | "google-calendar" | "google-mail" {
+  const mapping: Record<string, "slack" | "google-calendar" | "google-mail"> = {
+    slack: "slack",
+    "google-calendar": "google-calendar",
+    "google-mail": "google-mail",
+    gmail: "google-mail", // Handle alternative ID
+  };
+
+  const platform = mapping[nangoIntegrationId.toLowerCase()];
+  if (!platform) {
+    throw new Error(
+      `Unknown Nango integration ID: ${nangoIntegrationId}. Supported: slack, google-calendar, google-mail, gmail`
+    );
+  }
+  return platform;
+}
+
+/**
+ * Maps platform values to Nango integration IDs
+ */
+export function mapPlatformToNangoIntegrationId(
+  platform: "slack" | "google-calendar" | "google-mail"
+): string {
+  const mapping: Record<
+    "slack" | "google-calendar" | "google-mail",
+    string
+  > = {
+    slack: "slack",
+    "google-calendar": "google-calendar",
+    "google-mail": "google-mail",
+  };
+
+  return mapping[platform];
+}

@@ -10,6 +10,7 @@ export const PUBLIC_API_ROUTES = [
   // Add public API routes here, e.g.:
   // "/api/health",
   // "/api/public/webhook",
+  "/api/webhooks/google", // Google Pub/Sub webhook endpoint
 ] as const;
 
 /**

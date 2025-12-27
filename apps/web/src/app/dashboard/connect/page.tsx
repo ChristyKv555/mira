@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   useGetIntegrationsQuery,
   useConnectIntegrationMutation,
@@ -13,19 +14,54 @@ import { INTEGRATIONS } from "./constants";
 
 export default function ConnectPage() {
   const [connectingId, setConnectingId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
   const { data, isLoading, error } = useGetIntegrationsQuery();
   const [connectIntegration] = useConnectIntegrationMutation();
 
   const userIntegrations = data?.integrations || [];
 
+  // Handle OAuth callback success/error messages
+  useEffect(() => {
+    const success = searchParams.get("success");
+    const errorParam = searchParams.get("error");
+
+    if (success === "true") {
+      // Reset connecting state after successful connection
+      setConnectingId(null);
+    } else if (errorParam) {
+      alert(`Failed to connect: ${decodeURIComponent(errorParam)}`);
+      setConnectingId(null);
+    }
+  }, [searchParams]);
+
   const handleConnect = async (integrationId: string) => {
     try {
       setConnectingId(integrationId);
-      await connectIntegration({ platform: integrationId }).unwrap();
+
+      // Check if this is a Google integration that requires OAuth
+      if (
+        integrationId === "google-calendar" ||
+        integrationId === "google-mail"
+      ) {
+        // Call the connect API to get OAuth URL
+        const response = await connectIntegration({
+          platform: integrationId,
+        }).unwrap();
+
+        // Redirect to Google OAuth consent screen
+        if (response.authUrl) {
+          // State already includes platform, just redirect
+          window.location.href = response.authUrl;
+          return; // Don't reset connectingId yet, will be reset after redirect
+        }
+      } else {
+        // For non-Google integrations, use the existing flow
+        await connectIntegration({ platform: integrationId }).unwrap();
+        setConnectingId(null);
+      }
     } catch (error) {
       console.error("Error connecting integration:", error);
       alert("Failed to connect integration. Please try again.");
-    } finally {
       setConnectingId(null);
     }
   };

@@ -63,10 +63,40 @@ touch .env
 Add the following environment variables:
 
 ```env
+# Database
 DATABASE_URL=postgresql://username:password@localhost:5432/mira
+
+# Supabase (for authentication)
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Google OAuth (for Calendar and Gmail integration)
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+# For local development with ngrok, use: https://your-ngrok-url.ngrok.io/api/integrations/google/callback
+GOOGLE_REDIRECT_URI=https://yourdomain.com/api/integrations/google/callback
+
+# Google Pub/Sub (for webhooks)
+GOOGLE_PUBSUB_TOPIC=google-notifications
+GOOGLE_PUBSUB_PROJECT_ID=your_google_cloud_project_id
+
+# Webhook Security
+WEBHOOK_SECRET=your_webhook_secret_for_verification
+
+# Optional: Allowed origins for CORS (comma-separated, or use * for all)
+# For ngrok: https://your-ngrok-url.ngrok.io
+ALLOWED_ORIGINS=*
+
+# AI Model (Gemini)
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
-Replace `username`, `password`, `localhost`, `5432`, and `mira` with your actual PostgreSQL credentials.
+Replace the placeholder values with your actual credentials:
+
+- `DATABASE_URL`: Replace `username`, `password`, `localhost`, `5432`, and `mira` with your actual PostgreSQL credentials
+- `GOOGLE_REDIRECT_URI`: Use your production domain in production, or `http://localhost:3000/api/integrations/google/callback` for local development
+- `GOOGLE_PUBSUB_TOPIC`: Name of your Pub/Sub topic (e.g., `google-notifications`)
+- `GOOGLE_PUBSUB_PROJECT_ID`: Your Google Cloud project ID
 
 ### 4. Database Setup
 

@@ -3,6 +3,11 @@ export interface Integration {
   userId: string;
   platform: "slack" | "google-calendar" | "google-mail";
   connectionId: string;
+  metadata?: {
+    connectedAt?: string;
+    lastSyncTime?: string;
+    [key: string]: any;
+  } | null;
   isActive: number;
   createdAt: string;
 }

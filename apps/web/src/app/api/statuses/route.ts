@@ -71,7 +71,10 @@ export async function POST(request: NextRequest) {
         .orderBy(desc(taskStatuses.order))
         .limit(1);
 
-      order = maxOrderStatus.length > 0 ? maxOrderStatus[0].order + 1 : 0;
+      order =
+        maxOrderStatus.length > 0 && maxOrderStatus[0]?.order != null
+          ? maxOrderStatus[0].order + 1
+          : 0;
     }
 
     // Insert status
@@ -106,4 +109,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

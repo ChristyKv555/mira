@@ -8,7 +8,7 @@ export const integrationsApi = baseApi.injectEndpoints({
       providesTags: ["Integrations"],
     }),
     connectIntegration: builder.mutation<
-      { integration: Integration },
+      { integration?: Integration; authUrl?: string; state?: string },
       { platform: string }
     >({
       query: (body) => ({

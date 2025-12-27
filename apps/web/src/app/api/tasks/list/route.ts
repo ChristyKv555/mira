@@ -12,6 +12,7 @@ import { extractUserDataOrThrow } from "@/app/api/utils/extractor";
 export async function GET(request: NextRequest) {
   try {
     const userData = extractUserDataOrThrow(request);
+    console.log("userData", userData);
     const { searchParams } = new URL(request.url);
 
     // Extract filter parameters

@@ -8,6 +8,7 @@ import { insertPrioritySchema } from "@/database/schema/taskPriorities";
 export async function GET(request: NextRequest) {
   try {
     const userData = extractUserDataOrThrow(request);
+    console.log("userData", userData);
 
     // Fetch user's priorities
     const userPriorities = await db
@@ -15,6 +16,7 @@ export async function GET(request: NextRequest) {
       .from(taskPriorities)
       .where(eq(taskPriorities.userId, userData.userId))
       .orderBy(taskPriorities.level);
+    console.log("userPriorities", userPriorities);
 
     return NextResponse.json({
       priorities: userPriorities.map((priority) => ({
@@ -106,4 +108,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

@@ -36,6 +36,7 @@ export interface SyncWebhookPayload extends NangoWebhookPayload {
   providerConfigKey: string;
   model: string;
   syncType: "INITIAL" | "INCREMENTAL" | "WEBHOOK";
+  syncVariant?: string;
   responseResults: {
     added: number;
     updated: number;

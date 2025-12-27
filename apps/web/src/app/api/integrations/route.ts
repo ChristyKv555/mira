@@ -3,6 +3,7 @@ import { db } from "@/database";
 import { integrations, sourceEvents } from "@/database/schema";
 import { eq, and } from "drizzle-orm";
 import { extractUserDataOrThrow } from "@/app/api/utils/extractor";
+import { deleteNangoConnection } from "./utils/nangoConnection";
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,6 +59,24 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    const integration = existingIntegration[0];
+
+    // Delete the Nango connection first to prevent webhooks from continuing
+    const deleteResult = await deleteNangoConnection({
+      connectionId: integration.connectionId,
+      platform: integration.platform as
+        | "slack"
+        | "google-calendar"
+        | "google-mail",
+    });
+
+    if (!deleteResult.success) {
+      // Log warning but continue - connection might already be deleted or not exist in Nango
+      console.warn(
+        `Failed to delete Nango connection ${integration.connectionId}, continuing with database deletion`
+      );
+    }
+
     // Before deleting, set integrationId to NULL for all related source events
     // This preserves the source events (which may have already created tasks)
     // while allowing the integration to be deleted
@@ -66,7 +85,7 @@ export async function DELETE(request: NextRequest) {
       .set({ integrationId: null })
       .where(eq(sourceEvents.integrationId, integrationId));
 
-    // Delete the integration
+    // Delete the integration from database
     await db
       .delete(integrations)
       .where(

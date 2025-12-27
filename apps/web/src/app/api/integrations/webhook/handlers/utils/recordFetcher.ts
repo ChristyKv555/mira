@@ -1,10 +1,5 @@
-import { Nango } from "@nangohq/node";
 import type { SyncWebhookPayload } from "../types";
-
-// Initialize Nango client
-const nango = new Nango({
-  secretKey: process.env.NANGO_SECRET_KEY!,
-});
+import { listNangoRecords } from "../../../utils/nangoConnection";
 
 export interface FetchResult {
   records: unknown[];
@@ -56,10 +51,14 @@ export async function fetchNewlyAddedRecords(
     }
 
     // Fetch only the most recent newly added record (no pagination)
-    const nangoResult = await nango.listRecords(listRecordsParams);
+    const nangoResult = await listNangoRecords(listRecordsParams);
 
     if (nangoResult.records && nangoResult.records.length > 0) {
       result.records = nangoResult.records;
+    }
+
+    if (nangoResult.error) {
+      result.error = nangoResult.error;
     }
 
     console.log(
@@ -79,4 +78,3 @@ export async function fetchNewlyAddedRecords(
 
   return result;
 }
-

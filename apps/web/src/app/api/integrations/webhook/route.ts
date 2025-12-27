@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Nango } from "@nangohq/node";
 import type {
   NangoWebhookPayload,
   AuthWebhookPayload,
@@ -7,10 +6,7 @@ import type {
 } from "./handlers/types";
 import { handleCreationWebhook } from "./handlers/creationHandler";
 import { handleSyncWebhook } from "./handlers/syncHandler";
-
-const nango = new Nango({
-  secretKey: process.env.NANGO_SECRET_KEY!,
-});
+import { verifyNangoWebhookRequest } from "../utils/nangoConnection";
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,7 +27,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Verify the webhook request signature
-    const isValid = nango.verifyIncomingWebhookRequest(body, headers);
+    const isValid = verifyNangoWebhookRequest(body, headers);
 
     if (!isValid) {
       return NextResponse.json(

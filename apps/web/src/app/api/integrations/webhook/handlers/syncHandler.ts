@@ -11,12 +11,7 @@ export async function handleSyncWebhook(
   console.log("handleSyncWebhook", payload);
   try {
     // Validate required fields
-    if (
-      !payload.connectionId ||
-      !payload.providerConfigKey ||
-      !payload.model ||
-      !payload.endUser?.endUserId
-    ) {
+    if (!payload.connectionId || !payload.providerConfigKey || !payload.model) {
       return NextResponse.json(
         {
           message: "Validation failed",
@@ -25,8 +20,6 @@ export async function handleSyncWebhook(
         { status: 400 }
       );
     }
-
-    const userId = payload.endUser.endUserId;
 
     // Map providerConfigKey to platform
     const platform = mapNangoIntegrationIdToPlatform(payload.providerConfigKey);
@@ -54,6 +47,9 @@ export async function handleSyncWebhook(
     }
 
     const integrationRecord = integration[0];
+
+    // Use endUserId from payload if available, otherwise get from integration record
+    const userId = payload.endUser?.endUserId || integrationRecord.userId;
 
     // Extract externalId from payload
     // For sync webhooks, create a unique identifier using connectionId + model + timestamp

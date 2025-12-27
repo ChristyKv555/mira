@@ -7,7 +7,7 @@ export interface NangoWebhookPayload {
   success: boolean;
   connectionId?: string;
   providerConfigKey?: string;
-  endUser: {
+  endUser?: {
     endUserId: string;
     endUserEmail?: string;
     tags?: Record<string, unknown>;
@@ -43,11 +43,6 @@ export interface SyncWebhookPayload extends NangoWebhookPayload {
   };
   modifiedAfter?: string; // ISO timestamp
   success: boolean;
-  endUser: {
-    endUserId: string;
-    endUserEmail?: string;
-    tags?: Record<string, unknown>;
-  };
 }
 
 // Forwarded webhook payload (from external APIs)
@@ -56,11 +51,6 @@ export interface ForwardedWebhookPayload extends NangoWebhookPayload {
   connectionId: string;
   providerConfigKey: string;
   payload: Record<string, unknown>;
-  endUser: {
-    endUserId: string;
-    endUserEmail?: string;
-    tags?: Record<string, unknown>;
-  };
 }
 
 // Handler response type

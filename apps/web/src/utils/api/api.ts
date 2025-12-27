@@ -3,7 +3,7 @@
  * Falls back to empty string for relative URLs (local development)
  */
 export function getBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL || "";
+  return "";
 }
 
 /**

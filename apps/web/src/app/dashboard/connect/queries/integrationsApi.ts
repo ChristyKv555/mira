@@ -4,7 +4,7 @@ import { baseApi } from "@/utils/api/baseQuery";
 export const integrationsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getIntegrations: builder.query<{ integrations: Integration[] }, void>({
-      query: () => "/api/integrations/list",
+      query: () => "/api/integrations",
       providesTags: ["Integrations"],
     }),
     connectIntegration: builder.mutation<
@@ -43,6 +43,16 @@ export const integrationsApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+    deleteIntegration: builder.mutation<
+      { success: boolean; message: string },
+      { integrationId: string }
+    >({
+      query: ({ integrationId }) => ({
+        url: `/api/integrations?id=${integrationId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Integrations"],
+    }),
   }),
 });
 
@@ -51,5 +61,5 @@ export const {
   useConnectIntegrationMutation,
   useDisconnectIntegrationMutation,
   useGetConnectSessionMutation,
+  useDeleteIntegrationMutation,
 } = integrationsApi;
-

@@ -33,14 +33,13 @@ export async function fetchNewlyAddedRecords(
     const modifiedAfter = buildModifiedAfter(integrationLookup);
 
     // Build listRecords parameters
-    // Limit to 50 records per request to manage data flow
     const listRecordsParams = {
       providerConfigKey: payload.providerConfigKey,
       connectionId: payload.connectionId,
       model: payload.model,
       filter: "added" as const,
       modifiedAfter: modifiedAfter,
-      limit: 50, // Base limit to restrict data flow
+      limit: 1, // Base limit to restrict data flow
       ...(payload.syncVariant && { variant: payload.syncVariant }),
     };
 

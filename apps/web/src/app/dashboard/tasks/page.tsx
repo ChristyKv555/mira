@@ -32,7 +32,7 @@ import { CreateStatusModal } from "./components/CreateStatusModal";
 import { CreatePriorityModal } from "./components/CreatePriorityModal";
 import { EmptyState } from "./components/EmptyState";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
-import { LoadingSpinner } from "../connect/components/LoadingSpinner";
+import { TasksPageSkeleton } from "./components/TasksPageSkeleton";
 import type {
   Task,
   CreateTaskInput,
@@ -268,7 +268,7 @@ export default function TasksPage() {
   };
 
   if (tasksLoading || statusesLoading || prioritiesLoading) {
-    return <LoadingSpinner />;
+    return <TasksPageSkeleton />;
   }
 
   return (

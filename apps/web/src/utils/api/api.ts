@@ -3,7 +3,7 @@
  * Falls back to empty string for relative URLs (local development)
  */
 export function getBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_BASE_URL || "";
+  return "";
 }
 
 /**
@@ -15,4 +15,3 @@ export function getApiBaseUrl(endpointPath: string): string {
   const baseUrl = getBaseUrl();
   return baseUrl ? `${baseUrl}${endpointPath}` : endpointPath;
 }
-

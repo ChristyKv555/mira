@@ -9,6 +9,7 @@ import {
   buildRawContent,
 } from "./utils/metadataBuilder";
 import { createSourceEvent } from "./utils/sourceEventCreator";
+import { updateLastSyncTime } from "./utils/lastSyncUpdater";
 
 export async function handleSyncWebhook(
   payload: SyncWebhookPayload
@@ -29,25 +30,36 @@ export async function handleSyncWebhook(
       return integrationLookupResult;
     }
 
-    // Step 3: Fetch newly added records from Nango
-    const fetchResult = await fetchNewlyAddedRecords(payload);
+    // Step 3: Fetch records added after last sync (or integration creation for first sync)
+    // Uses lastSyncTime from metadata if available, otherwise uses integration.createdAt
+    const fetchResult = await fetchNewlyAddedRecords(
+      payload,
+      integrationLookupResult
+    );
+
+    // Step 4: Update last sync time after fetching records (even if no records found)
+    // This ensures we track sync progress and don't re-fetch old records
+    await updateLastSyncTime(
+      integrationLookupResult,
+      payload.modifiedAfter ? new Date(payload.modifiedAfter) : undefined
+    );
 
     // If there are records to process, continue with the flow
     if (fetchResult.records.length > 0) {
-      // Step 4: Build metadata and rawContent
+      // Step 5: Build metadata and rawContent
       const externalId = generateExternalId(payload);
       const metadataObj = buildMetadata(payload, fetchResult.error);
       const metadata = JSON.stringify(metadataObj);
       const rawContent = buildRawContent(payload, fetchResult);
 
-      // Step 5: Create source event in database
+      // Step 6: Create source event in database
       const newSourceEvent = await createSourceEvent({
         integrationLookup: integrationLookupResult,
         externalId,
         rawContent,
         metadata,
       });
-      // Step 6: Return success response
+      // Step 7: Return success response
       return NextResponse.json({
         message: "Sync webhook processed successfully",
         sourceEventId: newSourceEvent.id,

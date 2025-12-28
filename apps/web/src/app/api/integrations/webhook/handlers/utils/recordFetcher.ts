@@ -1,23 +1,22 @@
 import type { SyncWebhookPayload } from "../types";
 import { listNangoRecords } from "../../../utils/nangoConnection";
+import type { IntegrationLookupResult } from "./integrationLookup";
+import { buildModifiedAfter } from "./modifiedAfterBuilder";
 
 export interface FetchResult {
   records: unknown[];
   error: Error | null;
 }
 
-/**
- * Fetches newly added records from Nango
- */
 export async function fetchNewlyAddedRecords(
-  payload: SyncWebhookPayload
+  payload: SyncWebhookPayload,
+  integrationLookup: IntegrationLookupResult
 ): Promise<FetchResult> {
   const result: FetchResult = {
     records: [],
     error: null,
   };
 
-  // Only fetch records if there are newly added records
   const hasNewRecords = payload.responseResults.added > 0;
 
   if (!hasNewRecords) {
@@ -30,27 +29,22 @@ export async function fetchNewlyAddedRecords(
   }
 
   try {
+    // Get the integration creation date as ISO timestamp
+    const modifiedAfter = buildModifiedAfter(integrationLookup);
+
     // Build listRecords parameters
-    const listRecordsParams: {
-      providerConfigKey: string;
-      connectionId: string;
-      model: string;
-      variant?: string;
-      filter: "added";
-      limit: number;
-    } = {
+    // Limit to 50 records per request to manage data flow
+    const listRecordsParams = {
       providerConfigKey: payload.providerConfigKey,
       connectionId: payload.connectionId,
       model: payload.model,
-      filter: "added", // Only fetch newly added records, not old ones
-      limit: 1, // Only fetch the most recent added record
+      filter: "added" as const,
+      modifiedAfter: modifiedAfter,
+      limit: 50, // Base limit to restrict data flow
+      ...(payload.syncVariant && { variant: payload.syncVariant }),
     };
 
-    if (payload.syncVariant) {
-      listRecordsParams.variant = payload.syncVariant;
-    }
-
-    // Fetch only the most recent newly added record (no pagination)
+    // Fetch all records added after the integration was created
     const nangoResult = await listNangoRecords(listRecordsParams);
 
     if (nangoResult.records && nangoResult.records.length > 0) {
@@ -69,6 +63,7 @@ export async function fetchNewlyAddedRecords(
         added: payload.responseResults.added,
         updated: payload.responseResults.updated,
         deleted: payload.responseResults.deleted,
+        modifiedAfter: modifiedAfter,
       }
     );
   } catch (error) {

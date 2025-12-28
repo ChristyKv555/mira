@@ -25,8 +25,10 @@ export interface ListRecordsParams {
   connectionId: string;
   model: string;
   variant?: string;
-  filter: "added";
-  limit: number;
+  filter?: "added" | "updated" | "deleted";
+  limit?: number;
+  modifiedAfter?: string; // ISO timestamp - only fetch records modified after this time
+  cursor?: string; // Cursor for pagination and incremental syncing
 }
 
 export interface ListRecordsResult {

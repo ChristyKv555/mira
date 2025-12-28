@@ -8,7 +8,7 @@ import { useAppSelector } from "@/store/hooks";
 import { HighAttentionTasks } from "./components/HighAttentionTasks";
 import { TaskStatistics } from "./components/TaskStatistics";
 import { SourceBasedTasks } from "./components/SourceBasedTasks";
-import { LoadingSpinner } from "./connect/components/LoadingSpinner";
+import { DashboardPageSkeleton } from "./components/DashboardPageSkeleton";
 import { motion } from "framer-motion";
 import { TrendingUp, BarChart3 } from "lucide-react";
 import Link from "next/link";
@@ -31,7 +31,7 @@ export default function DashboardPage() {
   }, [tasksData, dispatch]);
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <DashboardPageSkeleton />;
   }
 
   return (

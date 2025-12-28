@@ -9,7 +9,7 @@ import {
 import { ConnectHeader } from "./components/ConnectHeader";
 import { IntegrationsGrid } from "./components/IntegrationsGrid";
 import { ConnectionsList } from "./components/ConnectionsList";
-import { LoadingSpinner } from "./components/LoadingSpinner";
+import { ConnectPageSkeleton } from "./components/ConnectPageSkeleton";
 import { INTEGRATIONS } from "./constants";
 
 // Initialize Nango frontend SDK (uses defaults if env vars not set)
@@ -56,7 +56,7 @@ export default function ConnectPage() {
   };
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <ConnectPageSkeleton />;
   }
 
   if (error) {

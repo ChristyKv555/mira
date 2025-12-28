@@ -14,7 +14,7 @@ import {
 } from "./store/keywordsSlice";
 import { useAppSelector } from "@/store/hooks";
 import { KeywordsMapperContent } from "./components/KeywordsMapperContent";
-import { LoadingSpinner } from "../connect/components/LoadingSpinner";
+import { KeywordsPageSkeleton } from "./components/KeywordsPageSkeleton";
 
 export default function KeywordsMapperPage() {
   const dispatch = useDispatch();
@@ -47,7 +47,7 @@ export default function KeywordsMapperPage() {
   const statuses = useAppSelector((state) => state.keywords.statuses);
 
   if (prioritiesLoading || statusesLoading) {
-    return <LoadingSpinner />;
+    return <KeywordsPageSkeleton />;
   }
 
   return (

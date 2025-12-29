@@ -32,6 +32,9 @@ export async function POST() {
     const events = await fetchUnprocessedEvents();
 
     if (events.length === 0) {
+      console.info(
+        "--------------------------------No unprocessed events found--------------------------------"
+      );
       return NextResponse.json({
         message: "No unprocessed events found",
         summary,

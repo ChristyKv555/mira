@@ -8,6 +8,7 @@ import { isApiRoute } from "./route-types";
  */
 export const PUBLIC_API_ROUTES = [
   "/api/integrations/webhook", // Nango webhook endpoint (signature verified internally)
+  "/api/jobs/events/process", // Cron job endpoint for processing source events
 ] as const;
 
 /**

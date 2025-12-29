@@ -79,7 +79,7 @@ export function KanbanBoard({
   };
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4 min-h-[600px]">
+    <div className="flex gap-4 overflow-x-auto pb-4 h-full">
       <AnimatePresence>
         {statuses.map((status) => {
           const statusTasks = tasksByStatus[status.id] || [];
@@ -92,11 +92,11 @@ export function KanbanBoard({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
-              className="shrink-0 w-80"
+              className="shrink-0 w-80 h-full"
             >
               <div className="bg-card rounded-lg border p-4 h-full flex flex-col">
                 {/* Column Header */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 shrink-0">
                   <div className="flex items-center gap-2">
                     <div
                       className="w-3 h-3 rounded-full"
@@ -113,7 +113,7 @@ export function KanbanBoard({
 
                 {/* Tasks Container */}
                 <div
-                  className={`flex-1 min-h-[400px] space-y-3 overflow-y-auto transition-all ${
+                  className={`flex-1 space-y-3 overflow-y-auto overflow-x-hidden transition-all ${
                     dragOverStatusId === status.id
                       ? "bg-accent/20 rounded-lg"
                       : ""

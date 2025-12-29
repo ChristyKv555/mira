@@ -21,7 +21,6 @@ interface TaskCardProps {
 
 export function TaskCard({ task, onClick, onEdit, onDelete }: TaskCardProps) {
   const priorityColor = task.priority?.color || "#94a3b8";
-  const statusColor = task.status?.color || "#94a3b8";
 
   return (
     <motion.div
@@ -35,7 +34,7 @@ export function TaskCard({ task, onClick, onEdit, onDelete }: TaskCardProps) {
     >
       <Card
         className="p-4 cursor-pointer hover:shadow-md transition-shadow bg-card border-l-4"
-        style={{ borderLeftColor: statusColor }}
+        style={{ borderLeftColor: priorityColor }}
         onClick={onClick}
       >
         <div className="flex items-start justify-between gap-2 mb-2">

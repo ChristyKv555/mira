@@ -83,9 +83,9 @@ export async function bulkCreateTasks(
         sourceEventId: task.sourceEventId,
         sourcePlatform: task.sourcePlatform,
         title: task.title,
-        description: task.description || null,
+        description: task.description,
         statusId: task.statusId,
-        priorityId: task.priorityId || null,
+        priorityId: task.priorityId,
         dueDate,
         embedding: embeddings[index],
       };

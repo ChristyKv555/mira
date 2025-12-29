@@ -12,11 +12,8 @@ export interface ValidatedTask extends TaskWithSource {
   dueDate?: string;
 }
 
-export interface ValidationResponse {
-  valid: boolean;
-  tasks: ValidatedTask[];
-  corrections: string[];
-}
+// Validation response is now just an array of validated tasks
+type ValidationResponse = ValidatedTask[];
 
 /**
  * Validates parsed tasks using AI model against task schema
@@ -34,7 +31,7 @@ export async function validateTasksWithAI(
     modelParams: {
       model: "gemini-2.5-flash",
       temperature: 0.5, // Medium temperature for validation
-      maxTokens: 2000,
+      maxTokens: 100000,
     },
     stream: false,
   });
@@ -51,38 +48,69 @@ export async function validateTasksWithAI(
       content = content.replace(/^```\n?/, "").replace(/\n?```$/, "");
     }
 
+    // Clean common JSON issues
+    // Remove any text before the first [ or after the last ]
+    const firstBracket = content.indexOf("[");
+    const lastBracket = content.lastIndexOf("]");
+    if (
+      firstBracket !== -1 &&
+      lastBracket !== -1 &&
+      lastBracket > firstBracket
+    ) {
+      content = content.substring(firstBracket, lastBracket + 1);
+    }
+
+    console.log("Validation AI Response content", content);
+
     // Parse JSON response
-    let validationResult: ValidationResponse;
+    let validatedTasksArray: ValidationResponse;
     try {
-      validationResult = JSON.parse(content);
+      validatedTasksArray = JSON.parse(content);
     } catch (error) {
-      throw new Error(
-        `Failed to parse validation response as JSON: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
-    }
+      // Log the problematic content for debugging
+      console.error("Failed to parse validation JSON. Content:", content);
+      console.error("JSON Parse Error:", error);
 
-    // Check if validation passed
-    if (!validationResult.valid) {
-      throw new Error(
-        `Task validation failed: ${validationResult.corrections.join(", ")}`
-      );
-    }
-
-    // Ensure all tasks have statusId (use default if missing)
-    // Match validated tasks to original tasks by index to preserve source event info
-    const validatedTasks: ValidatedTask[] = validationResult.tasks.map(
-      (task, index) => {
-        const originalTask = parsedTasks[index];
-
-        return {
-          ...task,
-          sourceEventId: originalTask?.sourceEventId || "",
-          sourcePlatform: originalTask?.sourcePlatform || "",
-          // Ensure statusId is always present
-          statusId: task.statusId || context.defaultStatusId || "",
-        };
+      // Try to extract just the array part if there's extra text
+      const arrayMatch = content.match(/\[[\s\S]*\]/);
+      if (arrayMatch) {
+        try {
+          validatedTasksArray = JSON.parse(arrayMatch[0]);
+        } catch (retryError) {
+          throw new Error(
+            `Failed to parse validation response as JSON after retry: ${retryError instanceof Error ? retryError.message : "Unknown error"}. Original error: ${error instanceof Error ? error.message : "Unknown error"}. Content preview: ${content.substring(0, 200)}...`
+          );
+        }
+      } else {
+        throw new Error(
+          `Failed to parse validation response as JSON: ${error instanceof Error ? error.message : "Unknown error"}. Content preview: ${content.substring(0, 200)}...`
+        );
       }
+    }
+
+    // Validate it's an array
+    if (!Array.isArray(validatedTasksArray)) {
+      throw new Error("Validation response is not an array");
+    }
+
+    // Create a map of original tasks by their title for matching (since order may change)
+    const originalTasksMap = new Map(
+      parsedTasks.map((task) => [task.title, task])
     );
+
+    // Match validated tasks to original tasks to preserve source event info
+    const validatedTasks: ValidatedTask[] = validatedTasksArray.map((task) => {
+      const originalTask = originalTasksMap.get(task.title);
+
+      return {
+        ...task,
+        sourceEventId: originalTask?.sourceEventId || "",
+        sourcePlatform: originalTask?.sourcePlatform || task.platform || "",
+        platform: originalTask?.platform || task.platform || "",
+        // Ensure statusId is always present
+        statusId: task.statusId || context.defaultStatusId || "",
+      };
+    });
 
     return validatedTasks;
   } else {

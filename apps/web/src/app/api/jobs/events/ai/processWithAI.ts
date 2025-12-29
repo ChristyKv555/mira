@@ -39,14 +39,38 @@ export async function processWithAI(
       content = content.replace(/^```\n?/, "").replace(/\n?```$/, "");
     }
 
+    // Clean common JSON issues
+    // Remove any text before the first [ or after the last ]
+    const firstBracket = content.indexOf("[");
+    const lastBracket = content.lastIndexOf("]");
+    if (
+      firstBracket !== -1 &&
+      lastBracket !== -1 &&
+      lastBracket > firstBracket
+    ) {
+      content = content.substring(firstBracket, lastBracket + 1);
+    }
+
+    console.log("AI generated tasks content", content);
+
     // Parse JSON response
     let parsedTasks: ParsedTask[];
     try {
       parsedTasks = JSON.parse(content);
     } catch (error) {
-      throw new Error(
-        `Failed to parse AI response as JSON: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
+      // Log the problematic content for debugging
+      console.error("Failed to parse JSON. Content:", content);
+      console.error("JSON Parse Error:", error);
+
+      // Try to extract just the array part if there's extra text
+      const arrayMatch = content.match(/\[[\s\S]*\]/);
+      if (arrayMatch) {
+        parsedTasks = JSON.parse(arrayMatch[0]);
+      } else {
+        throw new Error(
+          `Failed to parse AI response as JSON: ${error instanceof Error ? error.message : "Unknown error"}. Content preview: ${content.substring(0, 200)}...`
+        );
+      }
     }
 
     // Validate it's an array

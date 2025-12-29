@@ -27,11 +27,17 @@ export function generateAIPrompt(
     .join("\n");
 
   const userPrompt = `Process the following source events and create tasks:
-  Also the source events item maye contain multiple items inside the content, so you need to extract all the items and create a task for each item.
+
+**IMPORTANT FILTERING INSTRUCTIONS**:
+- Filter out email campaigns, newsletters, promotional content, spam, and non-actionable items
+- Only create tasks for work-related, actionable content that requires specific action or response
+- Skip informational-only content, automated notifications, and personal/non-work items
+- The source events may contain multiple items inside the content, so extract all actionable work items and create a task for each one
+- If a source event contains no actionable work items after filtering, skip it entirely
 
 ${eventsData}
 
-Return a JSON array of task objects following the structure specified in the system prompt.`;
+Return a JSON array of task objects following the structure specified in the system prompt. Only include tasks that are work-related and actionable.`;
 
   return {
     prompt: userPrompt,
@@ -39,7 +45,7 @@ Return a JSON array of task objects following the structure specified in the sys
     modelParams: {
       model: "gemini-2.5-flash",
       temperature: 0.7,
-      maxTokens: 2000,
+      maxTokens: 100000,
     },
     stream: false,
   };

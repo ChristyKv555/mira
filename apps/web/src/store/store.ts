@@ -3,19 +3,26 @@ import { persistStore, persistReducer } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 import { combineReducers } from "@reduxjs/toolkit";
 import authReducer from "./slices/authSlice";
+import integrationsReducer from "../app/dashboard/connect/store/integrationsSlice";
+import tasksReducer from "../app/dashboard/tasks/store/tasksSlice";
+import keywordsReducer from "../app/dashboard/keywords/store/keywordsSlice";
+import { baseApi, streamBaseApi } from "../utils/api/baseQuery";
 
 // Redux persist configuration
 const persistConfig = {
   key: "root",
   storage,
-  // Add any reducers you want to persist or blacklist here
-  // whitelist: ['auth'], // Only persist specific reducers
-  // blacklist: ['ui'], // Don't persist specific reducers
+  whitelist: ["auth"],
 };
 
 // Combine all reducers
 const rootReducer = combineReducers({
   auth: authReducer,
+  integrations: integrationsReducer,
+  tasks: tasksReducer,
+  keywords: keywordsReducer,
+  [baseApi.reducerPath]: baseApi.reducer,
+  [streamBaseApi.reducerPath]: streamBaseApi.reducer,
 });
 
 // Create persisted reducer
@@ -28,13 +35,14 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
+        ignoredPaths: ["streamApi"],
       },
-    }),
+    }).concat(baseApi.middleware, streamBaseApi.middleware),
 });
 
 // Create persistor
 export const persistor = persistStore(store);
 
 // Export types
-export type RootState = ReturnType<typeof store.getState>;
+export type RootState = ReturnType<typeof rootReducer>;
 export type AppDispatch = typeof store.dispatch;

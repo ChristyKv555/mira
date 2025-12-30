@@ -109,6 +109,7 @@ If no status keywords match, use this default status:
    - **Informational Only**: Read-only content with no actionable items, general announcements without specific tasks, informational updates that don't require action
    - **Personal/Non-Work**: Personal emails, personal calendar events, non-work-related content
    - **Generic Calendar Events**: Recurring meetings without specific agenda items, all-hands meetings, generic reminders
+   - **Cancelled Events & Emails**: Event cancellation notices, meeting cancellations, appointment cancellations, cancelled reservations, emails or messages indicating that an event, meeting, or task has been cancelled. Look for keywords like "cancelled", "canceled", "cancellation", "postponed indefinitely", "no longer happening", "event cancelled", "meeting cancelled", etc. Do NOT create tasks for cancelled events or emails related to cancellation - these are informational only and require no action.
 
    **ONLY CREATE TASKS** for content that meets these criteria:
    - **Actionable Work Items**: Tasks requiring specific action, follow-up, or response
@@ -123,8 +124,9 @@ If no status keywords match, use this default status:
    2. Does it require a specific action or response?
    3. Is it important enough to track as a task?
    4. Would skipping this cause work to be missed or delayed?
+   5. Is this a cancellation notice or related to a cancelled event? (If YES, skip it - do NOT create a task)
 
-   If the answer to ALL questions is YES, create a task. Otherwise, skip it silently.
+   If the answer to ALL questions 1-4 is YES AND question 5 is NO, create a task. Otherwise, skip it silently.
 
 3. **Task Extraction**: Extract meaningful tasks from the filtered content:
    - Identify actionable items that passed the filtering criteria above
@@ -148,9 +150,11 @@ If no status keywords match, use this default status:
    }
 
 4. **Status Assignment**:
+   - **CRITICAL**: Before assigning status, check if the content indicates a cancellation. If it's a cancelled event, meeting, or email about cancellation, do NOT create a task at all - skip it entirely.
    - Check content against status mapping keywords
    - If keywords match, use the corresponding statusId
    - If no match, use the default statusId
+   - **Note**: Even if a "cancelled" status exists in the status mappings, do NOT create tasks for cancelled events. Cancelled events should be filtered out completely, not assigned a cancelled status.
 
 5. **Date Extraction**:
    - Look for dates mentioned in the content
@@ -207,15 +211,16 @@ Line 2"} ❌ (Use: {"description": "Line 1\\nLine 2"})
 
 **FINAL CHECKLIST BEFORE RESPONDING**:
 1. ✓ Have I filtered out campaigns, newsletters, spam, and non-actionable content?
-2. ✓ Are all tasks work-related and require specific action?
-3. ✓ Is it valid JSON that can be parsed by JSON.parse()?
-4. ✓ Are all strings properly quoted and escaped?
-5. ✓ Are newlines in descriptions escaped as \\n (not actual newlines)?
-6. ✓ Are quotes inside strings escaped with backslash?
-7. ✓ Does every task have title, platform, sourceEventId, description, priorityId, and statusId?
-8. ✓ Are all UUIDs valid format?
-9. ✓ Is it just a JSON array with no text before/after?
-10. ✓ If no valid tasks after filtering, is it exactly []?
+2. ✓ Have I filtered out cancelled events, cancellation notices, and emails related to cancellation?
+3. ✓ Are all tasks work-related and require specific action?
+4. ✓ Is it valid JSON that can be parsed by JSON.parse()?
+5. ✓ Are all strings properly quoted and escaped?
+6. ✓ Are newlines in descriptions escaped as \\n (not actual newlines)?
+7. ✓ Are quotes inside strings escaped with backslash?
+8. ✓ Does every task have title, platform, sourceEventId, description, priorityId, and statusId?
+9. ✓ Are all UUIDs valid format?
+10. ✓ Is it just a JSON array with no text before/after?
+11. ✓ If no valid tasks after filtering, is it exactly []?
 
 **REMEMBER**: Quality over quantity. It's better to return an empty array [] than to include non-actionable, non-work-related content. Only create tasks for items that genuinely require work and action.
 

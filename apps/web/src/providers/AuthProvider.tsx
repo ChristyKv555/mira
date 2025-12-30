@@ -43,7 +43,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
                   email: user.email || "",
                   name: user.user_metadata?.name || user.email?.split("@")[0],
                 },
-                token: session.access_token,
               })
             );
           } else {
@@ -88,7 +87,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
                     session.user.user_metadata?.name ||
                     session.user.email?.split("@")[0],
                 },
-                token: session.access_token,
               })
             );
 
@@ -128,7 +126,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
                     session.user.user_metadata?.name ||
                     session.user.email?.split("@")[0],
                 },
-                token: session.access_token,
               })
             );
           }
@@ -145,7 +142,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
                     session.user.user_metadata?.name ||
                     session.user.email?.split("@")[0],
                 },
-                token: session.access_token,
               })
             );
           }

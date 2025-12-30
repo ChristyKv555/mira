@@ -32,7 +32,7 @@ export default function ConnectPage() {
       }).unwrap();
 
       // Open Nango Connect UI
-      const connectUI = nango.openConnectUI({
+      nango.openConnectUI({
         sessionToken: sessionResponse.sessionToken,
         onEvent: (event) => {
           if (event.type === "close") {

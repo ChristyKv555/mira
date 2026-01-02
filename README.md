@@ -6,6 +6,8 @@
 
 Mira connects tasks from various sources (email, Slack, Jira, etc.) into a unified platform and uses AI to intelligently prioritize them, ensuring you never miss important deadlines and stay organized effortlessly.
 
+[Technical Overview Documentation](https://gamma.app/docs/Mira-System-Technical-Overview-x3ddni9ph3bqi01?mode=doc)
+
 ### Key Features
 
 - **📊 Task Aggregation** - Connect all your task sources in one place

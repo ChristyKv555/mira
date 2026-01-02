@@ -1,0 +1,238 @@
+Project Mira {
+  database_type: 'PostgreSQL'
+  Note: '''
+  Mira - AI-Powered Task Management System
+  
+  This database schema supports:
+  - User authentication and management
+  - Third-party integrations (Slack, Gmail, Google Calendar)
+  - Source event ingestion and processing
+  - AI-powered task generation with embeddings
+  - Custom status and priority management
+  - Keyword-based mapping for automatic task assignment
+  - RAG-powered AI chat assistant
+  '''
+}
+
+// ============================================
+// Core User Management
+// ============================================
+
+Table users {
+  id uuid [pk]
+  email varchar [not null, unique, note: 'User email address']
+  name varchar [note: 'User display name']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+  
+  Note: 'User accounts - synced with Supabase Auth'
+}
+
+// ============================================
+// Task Management
+// ============================================
+
+Table task_statuses {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, note: 'Owner of this status']
+  label varchar [not null, note: 'Display label (e.g., "To Do", "In Progress")']
+  key varchar [not null, note: 'Unique key identifier (e.g., "to-do", "in-progress")']
+  color varchar [note: 'Hex color code for UI display']
+  "order" integer [default: 0, note: 'Display order for sorting']
+  created_at timestamp [not null, default: `now()`]
+  
+  Note: 'Custom task status definitions per user'
+}
+
+Table task_priorities {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, note: 'Owner of this priority']
+  label varchar [not null, note: 'Display label (e.g., "High", "Low")']
+  key varchar [not null, note: 'Unique key identifier (e.g., "high", "low")']
+  level integer [not null, default: 0, note: 'Priority level (higher = more important)']
+  color varchar [note: 'Hex color code for UI display']
+  created_at timestamp [not null, default: `now()`]
+  
+  Note: 'Custom task priority definitions per user'
+}
+
+Table tasks {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, note: 'Task owner']
+  
+  source_platform varchar [default: 'custom', note: 'Platform source (slack, google-calendar, google-mail, custom)']
+  source_external_id varchar [note: 'External ID from source platform']
+  source_event_id uuid [note: 'Reference to original source event']
+  
+  status_id uuid [note: 'Current task status']
+  priority_id uuid [note: 'Task priority level']
+  
+  title varchar [not null, note: 'Task title']
+  description text [note: 'Task description/details']
+  
+  embedding text [note: 'pgvector embedding (1536 dimensions) for RAG similarity search - stored as vector type in PostgreSQL']
+  
+  due_date timestamp [note: 'Task due date']
+  completed_at timestamp [note: 'Task completion timestamp']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+  
+  Note: '''
+  Processed tasks with AI-generated embeddings.
+  Embeddings are generated using Gemini Embedding 001 model.
+  Used for RAG-powered chat assistant via vector similarity search.
+  '''
+  
+  indexes {
+    user_id [name: 'tasks_user_id_index']
+    embedding [name: 'embedding_index', note: 'HNSW index (PostgreSQL-specific) for cosine similarity search - created via SQL: CREATE INDEX embedding_index ON tasks USING hnsw (embedding vector_cosine_ops)']
+  }
+}
+
+// ============================================
+// Keyword Mappings
+// ============================================
+
+Table priority_mappings {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, note: 'Mapping owner']
+  priority_id uuid [not null, note: 'Target priority']
+  keywords text[] [default: '{}', note: 'Array of keywords that trigger this priority']
+  is_active boolean [not null, default: true, note: 'Whether this mapping is active']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+  
+  Note: 'Maps keywords to priorities for automatic AI task assignment'
+}
+
+Table status_mappings {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, note: 'Mapping owner']
+  status_id uuid [not null, note: 'Target status']
+  keywords text[] [default: '{}', note: 'Array of keywords that trigger this status']
+  is_active boolean [not null, default: true, note: 'Whether this mapping is active']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+  
+  Note: 'Maps keywords to statuses for automatic AI task assignment'
+}
+
+// ============================================
+// Third-Party Integrations
+// ============================================
+
+Table integrations {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, note: 'Integration owner']
+  platform varchar [not null, note: 'Platform type: slack, google-calendar, google-mail']
+  connection_id varchar [not null, note: 'Nango connection ID']
+  metadata jsonb [note: 'Additional integration metadata (lastSyncTime, etc.)']
+  is_active integer [default: 1, note: 'Active status (1 = active, 0 = inactive)']
+  created_at timestamp [not null, default: `now()`]
+  
+  Note: '''
+  Connected third-party accounts managed via Nango.
+  Nango handles OAuth token refresh and sync management.
+  '''
+}
+
+Table source_events {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, note: 'Event owner']
+  integration_id uuid [note: 'Source integration']
+  platform varchar [not null, note: 'Platform: slack, google-calendar, google-mail']
+  external_id varchar [not null, note: 'Unique external ID from source platform']
+  raw_content text [not null, note: 'Raw content from source (email body, message, event details)']
+  metadata text [note: 'JSON metadata about the event']
+  processed_at timestamp [note: 'Timestamp when event was processed by AI workflow (NULL = unprocessed)']
+  created_at timestamp [not null, default: `now()`]
+  
+  Note: '''
+  Raw events from integrations before AI processing.
+  Processed by pgcron job that triggers AI workflow.
+  After processing, processed_at is set and tasks are created.
+  '''
+  
+  indexes {
+    user_id [name: 'source_events_user_id_index']
+    processed_at [name: 'source_events_processed_at_index', note: 'Index for finding unprocessed events']
+  }
+}
+
+// ============================================
+// AI Chat Assistant
+// ============================================
+
+Table chat_sessions {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, note: 'Session owner']
+  title varchar [note: 'Session title']
+  type varchar [not null, note: 'Session type: ask or generate']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+  
+  Note: 'AI chat conversation sessions'
+}
+
+Table chat_messages {
+  id uuid [pk, default: `gen_random_uuid()`]
+  chat_session_id uuid [not null, note: 'Parent session']
+  user_id uuid [not null, note: 'Message owner']
+  role varchar [not null, note: 'Message role: user or assistant']
+  content text [not null, note: 'Message content']
+  created_at timestamp [not null, default: `now()`]
+  
+  Note: 'Individual messages in chat sessions. Used for conversation history in RAG chat.'
+}
+
+// ============================================
+// Relationships
+// ============================================
+
+Ref: task_statuses.user_id > users.id [delete: cascade]
+Ref: task_priorities.user_id > users.id [delete: cascade]
+Ref: tasks.user_id > users.id [delete: cascade]
+Ref: tasks.status_id > task_statuses.id
+Ref: tasks.priority_id > task_priorities.id
+Ref: tasks.source_event_id > source_events.id
+
+Ref: priority_mappings.user_id > users.id [delete: cascade]
+Ref: priority_mappings.priority_id > task_priorities.id [delete: cascade]
+
+Ref: status_mappings.user_id > users.id [delete: cascade]
+Ref: status_mappings.status_id > task_statuses.id [delete: cascade]
+
+Ref: integrations.user_id > users.id [delete: cascade]
+Ref: source_events.user_id > users.id [delete: cascade]
+Ref: source_events.integration_id > integrations.id
+
+Ref: chat_sessions.user_id > users.id [delete: cascade]
+Ref: chat_messages.chat_session_id > chat_sessions.id [delete: cascade]
+Ref: chat_messages.user_id > users.id [delete: cascade]
+
+// ============================================
+// Table Groups for Organization
+// ============================================
+
+TableGroup core [color: #3498DB] {
+  users
+}
+
+TableGroup task_management [color: #2ECC71] {
+  tasks
+  task_statuses
+  task_priorities
+  priority_mappings
+  status_mappings
+}
+
+TableGroup integrations [color: #E74C3C] {
+  integrations
+  source_events
+}
+
+TableGroup ai_chat [color: #9B59B6] {
+  chat_sessions
+  chat_messages
+}
+

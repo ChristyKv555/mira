@@ -3,9 +3,18 @@
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { createClient } from "@/utils/supabase/client";
+import { useMemo } from "react";
 
 export default function LoginPage() {
   const supabase = createClient();
+
+  // Get the correct redirect URL, handling both localhost and ngrok URLs
+  const redirectTo = useMemo(() => {
+    if (typeof window === "undefined") return "";
+
+    // Use the current window origin (works for both localhost and ngrok)
+    return `${window.location.origin}/auth/callback`;
+  }, []);
 
   // Custom theme matching app colors
   const customTheme = {
@@ -83,7 +92,7 @@ export default function LoginPage() {
           providers={[]}
           supabaseClient={supabase}
           appearance={{ theme: customTheme }}
-          redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback`}
+          redirectTo={redirectTo}
         />
       </div>
     </div>

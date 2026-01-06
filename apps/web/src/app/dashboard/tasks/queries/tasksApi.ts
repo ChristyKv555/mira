@@ -1,0 +1,101 @@
+import type {
+  Task,
+  TaskStatus,
+  TaskPriority,
+  CreateTaskInput,
+  CreateStatusInput,
+  CreatePriorityInput,
+  UpdateTaskInput,
+} from "../types";
+import type { TaskFilters } from "../components/TaskFilters";
+import { baseApi } from "@/utils/api/baseQuery";
+
+export const tasksApi = baseApi.injectEndpoints({
+  endpoints: (builder) => ({
+    getTasks: builder.query<{ tasks: Task[] }, TaskFilters | void>({
+      query: (filters) => {
+        const params = new URLSearchParams();
+        if (filters) {
+          if (filters.priorityIds.length > 0) {
+            filters.priorityIds.forEach((id) => {
+              params.append("priorityIds", id);
+            });
+          }
+          if (filters.sources.length > 0) {
+            filters.sources.forEach((source) => {
+              params.append("sources", source);
+            });
+          }
+          if (filters.dueDateFilter) {
+            params.append("dueDateFilter", filters.dueDateFilter);
+          }
+        }
+        const queryString = params.toString();
+        return `/api/tasks/list${queryString ? `?${queryString}` : ""}`;
+      },
+      providesTags: ["Tasks"],
+    }),
+    getStatuses: builder.query<{ statuses: TaskStatus[] }, void>({
+      query: () => "/api/statuses",
+      providesTags: ["Statuses"],
+    }),
+    getPriorities: builder.query<{ priorities: TaskPriority[] }, void>({
+      query: () => "/api/priorities",
+      providesTags: ["Priorities"],
+    }),
+    createTask: builder.mutation<{ task: Task }, CreateTaskInput>({
+      query: (body) => ({
+        url: "/api/tasks/create",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Tasks"],
+    }),
+    updateTask: builder.mutation<{ task: Task }, UpdateTaskInput>({
+      query: ({ id, ...body }) => ({
+        url: `/api/tasks/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Tasks"],
+    }),
+    deleteTask: builder.mutation<{ success: boolean }, string>({
+      query: (id) => ({
+        url: `/api/tasks/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Tasks"],
+    }),
+    createStatus: builder.mutation<{ status: TaskStatus }, CreateStatusInput>({
+      query: (body) => ({
+        url: "/api/statuses",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Statuses"],
+    }),
+    createPriority: builder.mutation<
+      { priority: TaskPriority },
+      CreatePriorityInput
+    >({
+      query: (body) => ({
+        url: "/api/priorities",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Priorities"],
+    }),
+  }),
+});
+
+export const {
+  useGetTasksQuery,
+  useGetStatusesQuery,
+  useGetPrioritiesQuery,
+  useCreateTaskMutation,
+  useUpdateTaskMutation,
+  useDeleteTaskMutation,
+  useCreateStatusMutation,
+  useCreatePriorityMutation,
+} = tasksApi;
+
